@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from enum import Enum
 from pydantic import BaseModel
 from src.api import auth
 import sqlalchemy
@@ -27,10 +26,12 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
             red += potion.quantity
 
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT num_red_potions FROM global_inventory"))
+        result = connection.execute(sqlalchemy.text(
+            "SELECT num_red_potions FROM global_inventory"))
         existing_red =  result.one()[0]
 
-        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_red_potions={existing_red + red}"))
+        connection.execute(sqlalchemy.text(
+            f"UPDATE global_inventory SET num_red_potions={existing_red + red}"))
 
     return "OK"
 
@@ -41,7 +42,8 @@ def get_bottle_plan():
     Go from barrel to bottle.
     """
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT (num_red_ml) FROM global_inventory"))
+        result = connection.execute(sqlalchemy.text(
+            "SELECT (num_red_ml) FROM global_inventory"))
         num_red_ml = result.one()[0]
 
         if num_red_ml >= 100:

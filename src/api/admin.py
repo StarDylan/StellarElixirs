@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, Request
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
 from src.api import auth
 import sqlalchemy
 from src import database as db
@@ -18,7 +17,8 @@ def reset():
     """
 
     with db.engine.begin() as connection:
-        connection.execute(sqlalchemy.text("UPDATE global_inventory SET gold=100, num_red_potions=0, num_red_ml=0"))
+        connection.execute(sqlalchemy.text(
+            "UPDATE global_inventory SET gold=100, num_red_potions=0, num_red_ml=0"))
     return "OK"
 
 

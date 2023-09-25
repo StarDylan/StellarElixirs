@@ -4,7 +4,6 @@ from pydantic import ValidationError
 from src.api import audit, carts, catalog, bottler, barrels, admin
 import json
 import logging
-import sys
 
 description = """
 Shine Bright with Stellar Elixirs: Your Celestial Source for Magical Potions
