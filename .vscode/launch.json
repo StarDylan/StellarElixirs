@@ -13,7 +13,8 @@
                 "src.api.server:app"
             ],
             "jinja": true,
-            "justMyCode": true
+            "justMyCode": true,
+            "envFile": "${workspaceFolder}/.env"
         }
     ]
 }
