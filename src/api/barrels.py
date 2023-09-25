@@ -24,6 +24,18 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     """ """
     print(barrels_delivered)
 
+    red = 0
+    for barrel in barrels_delivered:
+        if barrel.potion_type == [100, 0, 0, 0]:
+            red += barrel.ml_per_barrel * barrel.quantity
+
+    with db.engine.begin() as connection:
+        result = connection.execute(sqlalchemy.text("SELECT num_red_ml FROM global_inventory"))
+        num_red_ml_existing =  result.one()[0]
+
+        connection.execute(sqlalchemy.text(f"UPDATE global_inventory SET num_red_ml={num_red_ml_existing + red}"))
+
+
     return "OK"
 
 # Gets called once a day
@@ -32,7 +44,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     print(wholesale_catalog)
     with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text("SELECT (num_red_potions) FROM global_inventory"))
+        result = connection.execute(sqlalchemy.text("SELECT num_red_potions, gold FROM global_inventory"))
         num_red_potions = result.one()[0]
         if num_red_potions < 10:
             return [
