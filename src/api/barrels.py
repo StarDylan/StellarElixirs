@@ -48,13 +48,21 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
             "SELECT num_red_potions, gold FROM global_inventory"))
-        num_red_potions = result.one()[0]
-        if num_red_potions < 10:
+        result = result.one()
+        num_red_potions = result[0]
+        gold = result[0]
+
+        if num_red_potions < 10 and gold >= 100:
+            connection.execute(sqlalchemy.text(
+                f"UPDATE global_inventory SET gold={gold - 100}"))
+             
             return [
                 {
                     "sku": "SMALL_RED_BARREL",
                     "quantity": 1,
                 }
             ]
+        
+           
         else:
             return []
