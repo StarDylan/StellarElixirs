@@ -26,11 +26,25 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
 
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
-            "SELECT num_red_potions FROM global_inventory"))
-        existing_red =  result.one()[0]
+            "SELECT num_red_potions, num_red_ml FROM global_inventory"))
+        result = result.one()
+        existing_red =  result[0]
+        existing_ml = result[1]
+
+        red_ml_used = 0
+        for bottle in potions_delivered:
+            red_ml_used += bottle.quantity * bottle.potion_type[0]
+
+        print("Barrels Recieved!")
+        print(f"Red potions go from {existing_red} to {existing_red + red}")
+        print(f"Red ML go from {existing_ml} to {existing_ml - red_ml_used}")
 
         connection.execute(sqlalchemy.text(
             f"UPDATE global_inventory SET num_red_potions={existing_red + red}"))
+        
+        
+        connection.execute(sqlalchemy.text(
+            f"UPDATE global_inventory SET num_red_ml={existing_ml - red_ml_used}"))
 
     return "OK"
 
@@ -45,6 +59,9 @@ def get_bottle_plan():
             "SELECT (num_red_ml) FROM global_inventory"))
         num_red_ml = result.one()[0]
 
+        print("Bottler Plan!")
+        print(f"Red ML: {num_red_ml}")
+
         if num_red_ml >= 100:
 
             # Each bottle has a quantity of what proportion of red, blue, and
@@ -53,6 +70,7 @@ def get_bottle_plan():
 
             # Initial logic: bottle all barrels into red potions.
 
+            print(f"Number of Bottled potions = {num_red_ml // 100}")
             return [
                     {
                         "potion_type": [100, 0, 0, 0],
@@ -60,4 +78,5 @@ def get_bottle_plan():
                     }
                 ]
         else:
+            print("No Bottling!")
             return []

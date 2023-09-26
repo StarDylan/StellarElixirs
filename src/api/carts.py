@@ -16,6 +16,7 @@ class NewCart(BaseModel):
 @router.post("/")
 def create_cart(new_cart: NewCart):
     """ """
+    print("Creating cart 1")
     return {"cart_id": 1}
 
 
@@ -33,7 +34,10 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-
+    print("Set item quantity")
+    print(cart_item)
+    print(item_sku)
+    print(cart_id)
     return "OK"
 
 
@@ -43,5 +47,5 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-
+    print(f"Checkout cart #{cart_id}, Payment: {cart_checkout}")
     return {"total_potions_bought": 1, "total_gold_paid": 50}
