@@ -26,8 +26,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
     red = 0
     for barrel in barrels_delivered:
-        if barrel.potion_type == [100, 0, 0, 0]:
-            red += barrel.ml_per_barrel * barrel.quantity
+        red += barrel.ml_per_barrel * barrel.quantity
 
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(

@@ -22,8 +22,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
 
     red = 0
     for potion in potions_delivered:
-        if potion.potion_type == [100, 0, 0, 0]:
-            red += potion.quantity
+        red += potion.quantity
 
     with db.engine.begin() as connection:
         result = connection.execute(sqlalchemy.text(
