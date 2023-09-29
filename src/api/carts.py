@@ -75,22 +75,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             f"SELECT (num_red_potions) FROM carts \
                 WHERE id={cart_id}")).one()[0]
         
-        num_red_potions_existing = connection.execute(sqlalchemy.text(
-            "SELECT num_red_potions FROM global_inventory")).one()[0]
-
-        
-        gold_existing = connection.execute(sqlalchemy.text(
-            "SELECT gold FROM global_inventory")).one()[0]
-        
         # Set Potions
-        connection.execute(sqlalchemy.text(
-            f"UPDATE global_inventory SET \
-            num_red_potions={num_red_potions_existing - red_potions}"))
+
+        db.add_red_potions(-red_potions)
         
         # Set Gold
-        connection.execute(sqlalchemy.text(
-            f"UPDATE global_inventory SET \
-            gold={gold_existing + (red_potions * 50)}"))
+        db.add_gold(red_potions * 50)
         
         connection.execute(sqlalchemy.text(
             f"DELETE FROM carts WHERE id={cart_id}"))

@@ -31,23 +31,15 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
         gold_used += barrel.price * barrel.quantity
 
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(
-            "SELECT num_red_ml, gold FROM global_inventory"))
-        result = result.one()
-        num_red_ml_existing =  result[0]
-        gold = result[1]
+    existing_red_ml = db.get_red_ml()
+    existing_gold = db.get_gold()
 
-        print("Barrels Recieved!")
-        print(f"Red ML go from {num_red_ml_existing} to {num_red_ml_existing + red}")
-        print(f"Gold go from {gold} to {gold - gold_used}")
+    db.add_gold(-gold_used)
+    db.add_red_ml(red)
 
-        connection.execute(sqlalchemy.text(
-            f"UPDATE global_inventory SET num_red_ml={num_red_ml_existing + red}"))
-        
-        connection.execute(sqlalchemy.text(
-            f"UPDATE global_inventory SET gold={gold - gold_used}"))
-
+    print("Barrels Recieved!")
+    print(f"Red ML go from {existing_red_ml} to {existing_red_ml + red}")
+    print(f"Gold go from {existing_gold} to {existing_gold - gold_used}")
 
     return "OK"
 
@@ -56,25 +48,22 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     print(wholesale_catalog)
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(
-            "SELECT num_red_potions, gold FROM global_inventory"))
-        result = result.one()
-        num_red_potions = result[0]
-        gold = result[1]
 
-        print("Wholesale Catalog Recieved!")
-        print(f"num_red_potions: {num_red_potions}; Gold: {gold}")
-        if num_red_potions < 10 and gold >= 100:
-            print("Buy SMALL_RED_BARREL")
-            return [
-                {
-                    "sku": "SMALL_RED_BARREL",
-                    "quantity": 1,
-                }
-            ]
+    red_potions = db.get_red_potions()
+    gold = db.get_gold()
+    
+    print("Wholesale Catalog Recieved!")
+    print(f"num_red_potions: {red_potions}; Gold: {gold}")
+    if red_potions < 10 and gold >= 100:
+        print("Buy SMALL_RED_BARREL")
+        return [
+            {
+                "sku": "SMALL_RED_BARREL",
+                "quantity": 1,
+            }
+        ]
+    
         
-           
-        else:
-            print("Buy Nothing")
-            return []
+    else:
+        print("Buy Nothing")
+        return []

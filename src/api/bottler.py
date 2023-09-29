@@ -24,27 +24,20 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     for potion in potions_delivered:
         red += potion.quantity
 
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(
-            "SELECT num_red_potions, num_red_ml FROM global_inventory"))
-        result = result.one()
-        existing_red =  result[0]
-        existing_ml = result[1]
+    red_ml_used = 0
+    for bottle in potions_delivered:
+        red_ml_used += bottle.quantity * bottle.potion_type[0]
 
-        red_ml_used = 0
-        for bottle in potions_delivered:
-            red_ml_used += bottle.quantity * bottle.potion_type[0]
+    
+    existing_red = db.get_red_potions()
+    existing_ml = db.get_red_ml()
 
-        print("Barrels Recieved!")
-        print(f"Red potions go from {existing_red} to {existing_red + red}")
-        print(f"Red ML go from {existing_ml} to {existing_ml - red_ml_used}")
+    db.add_red_ml(-red_ml_used)
+    db.add_red_potions(red)
 
-        connection.execute(sqlalchemy.text(
-            f"UPDATE global_inventory SET num_red_potions={existing_red + red}"))
-        
-        
-        connection.execute(sqlalchemy.text(
-            f"UPDATE global_inventory SET num_red_ml={existing_ml - red_ml_used}"))
+    print("Barrels Recieved!")
+    print(f"Red ML go from {existing_ml} to {existing_ml - red_ml_used}")
+    print(f"Red potions go from {existing_red} to {existing_red + red}")
 
     return "OK"
 
@@ -54,29 +47,26 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
-    with db.engine.begin() as connection:
-        result = connection.execute(sqlalchemy.text(
-            "SELECT (num_red_ml) FROM global_inventory"))
-        num_red_ml = result.one()[0]
+    num_red_ml = db.get_red_ml()
 
-        print("Bottler Plan!")
-        print(f"Red ML: {num_red_ml}")
+    print("Bottler Plan!")
+    print(f"Red ML: {num_red_ml}")
 
-        if num_red_ml >= 100:
+    if num_red_ml >= 100:
 
-            # Each bottle has a quantity of what proportion of red, blue, and
-            # green potion to add.
-            # Expressed in integers from 1 to 100 that must sum up to 100.
+        # Each bottle has a quantity of what proportion of red, blue, and
+        # green potion to add.
+        # Expressed in integers from 1 to 100 that must sum up to 100.
 
-            # Initial logic: bottle all barrels into red potions.
+        # Initial logic: bottle all barrels into red potions.
 
-            print(f"Number of Bottled potions = {num_red_ml // 100}")
-            return [
-                    {
-                        "potion_type": [100, 0, 0, 0],
-                        "quantity": num_red_ml // 100,
-                    }
-                ]
-        else:
-            print("No Bottling!")
-            return []
+        print(f"Number of Bottled potions = {num_red_ml // 100}")
+        return [
+                {
+                    "potion_type": [100, 0, 0, 0],
+                    "quantity": num_red_ml // 100,
+                }
+            ]
+    else:
+        print("No Bottling!")
+        return []
