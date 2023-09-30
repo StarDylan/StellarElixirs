@@ -38,7 +38,8 @@ def add_red_ml(red_ml_to_add: int):
     """ """
     with engine.begin() as connection:
         connection.execute(
-           sqlalchemy.text( f"UPDATE global_inventory SET num_red_ml=num_red_ml + {red_ml_to_add}")
+           sqlalchemy.text( f"UPDATE global_inventory \
+                           SET num_red_ml=num_red_ml + {red_ml_to_add}")
         )
 
 def get_red_potions():
@@ -53,5 +54,6 @@ def add_red_potions(red_potions_to_add: int):
     """ """
     with engine.begin() as connection:
         connection.execute(
-            sqlalchemy.text(f"UPDATE global_inventory SET num_red_potions=num_red_potions + {red_potions_to_add}")
+            sqlalchemy.text(f"UPDATE global_inventory \
+                            SET num_red_potions=num_red_potions + {red_potions_to_add}")
         )
