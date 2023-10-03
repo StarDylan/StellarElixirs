@@ -12,7 +12,12 @@ router = APIRouter(
 @router.get("/inventory")
 def get_inventory():
     """ """
-    return {"number_of_potions": db.get_red_potions(), 
+
+    total_potions = 0
+    for potion in db.get_potions():
+        total_potions += potion.quantity
+
+    return {"number_of_potions": total_potions, 
             "ml_in_barrels": db.get_red_ml(), 
             "gold": db.get_gold()}
 
