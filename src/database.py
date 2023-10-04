@@ -37,6 +37,21 @@ def get_red_ml():
             sqlalchemy.text("SELECT num_red_ml FROM global_inventory")
         ).one()
         return result[0]
+    
+def get_green_ml():
+    """ """
+    with engine.begin() as connection:
+        result = connection.execute(
+            sqlalchemy.text("SELECT num_green_ml FROM global_inventory")
+        ).one()
+        return result[0]
+def get_blue_ml():
+    """ """
+    with engine.begin() as connection:
+        result = connection.execute(
+            sqlalchemy.text("SELECT num_blue_ml FROM global_inventory")
+        ).one()
+        return result[0]
 
 def add_red_ml(red_ml_to_add: int):
     """ """
@@ -44,6 +59,22 @@ def add_red_ml(red_ml_to_add: int):
         connection.execute(
            sqlalchemy.text( f"UPDATE global_inventory \
                            SET num_red_ml=num_red_ml + {red_ml_to_add}")
+        )
+
+def add_green_ml(green_ml_to_add: int):
+    """ """
+    with engine.begin() as connection:
+        connection.execute(
+           sqlalchemy.text( f"UPDATE global_inventory \
+                           SET num_green_ml=num_green_ml + {green_ml_to_add}")
+        )
+
+def add_blue_ml(blue_ml_to_add: int):
+    """ """
+    with engine.begin() as connection:
+        connection.execute(
+           sqlalchemy.text( f"UPDATE global_inventory \
+                           SET num_blue_ml=num_blue_ml + {blue_ml_to_add}")
         )
     
 def add_potions(quantity: int, red: int, green: int, blue: int, dark: int):
