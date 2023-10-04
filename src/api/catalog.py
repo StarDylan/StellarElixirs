@@ -13,19 +13,20 @@ def get_catalog():
     print("Customer Getting catalog")
 
     # Can return a max of 20 items.
-    num_red_potions = db.get_red_potions()
+    potions_to_sell = db.get_potions()[:20]
     
-    if num_red_potions == 0:
-        print("No red potions in inventory")
+    if len(potions_to_sell) == 0:
+        print("No potions in inventory")
         return []
     else:
-        print("Red potions in inventory")
-        return [
-                {
-                    "sku": "RED_POTION_0",
-                    "name": "red potion",
-                    "quantity": num_red_potions,
-                    "price": 50,
-                    "potion_type": [100, 0, 0, 0],
-                }
-        ]
+        catalog = []
+        for potion_entry in potions_to_sell:
+            catalog.append({
+                "sku": potion_entry.sku,
+                "name": potion_entry.sku,
+                "quantity": potion_entry.quantity,
+                "price": potion_entry.price,
+                "potion_type": potion_entry.potion_type.to_array(),
+            })
+        
+        return catalog

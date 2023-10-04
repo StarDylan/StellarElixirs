@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 from src import database as db
+from src.models import BarrelDelta, BarrelStock, PotionType
 
 router = APIRouter(
     prefix="/bottler",
@@ -17,26 +18,20 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     print(potions_delivered)
+
+    barrel_delta = BarrelDelta.init_zero()
     
+    for delivered_potion in potions_delivered:
+        db.add_potions_by_type(
+            PotionType.from_list(delivered_potion.potion_type), 
+            delivered_potion.quantity)
 
-    red = 0
-    for potion in potions_delivered:
-        red += potion.quantity
+        barrel_delta.remove_stock(delivered_potion.potion_type, 
+                                  delivered_potion.quantity)
 
-    red_ml_used = 0
-    for bottle in potions_delivered:
-        red_ml_used += bottle.quantity * bottle.potion_type[0]
-
-    
-    existing_red = db.get_red_potions()
-    existing_ml = db.get_red_ml()
-
-    db.add_red_ml(-red_ml_used)
-    db.add_red_potions(red)
+    db.add_barrel_stock(barrel_delta)
 
     print("Barrels Recieved!")
-    print(f"Red ML go from {existing_ml} to {existing_ml - red_ml_used}")
-    print(f"Red potions go from {existing_red} to {existing_red + red}")
 
     return "OK"
 
@@ -46,26 +41,37 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
-    num_red_ml = db.get_red_ml()
 
-    print("Bottler Plan!")
-    print(f"Red ML: {num_red_ml}")
+    # Each bottle has a quantity of what proportion of red, blue, and
+    # green potion to add.
+    # Expressed in integers from 1 to 100 that must sum up to 100.
 
-    if num_red_ml >= 100:
 
-        # Each bottle has a quantity of what proportion of red, blue, and
-        # green potion to add.
-        # Expressed in integers from 1 to 100 that must sum up to 100.
+    barrel_stock = db.get_barrel_stock()
 
-        # Initial logic: bottle all barrels into red potions.
+    plan = []
 
-        print(f"Number of Bottled potions = {num_red_ml // 100}")
-        return [
+    if barrel_stock.red_ml >= 100:
+        plan.append(
                 {
                     "potion_type": [100, 0, 0, 0],
-                    "quantity": num_red_ml // 100,
+                    "quantity": barrel_stock.red_ml // 100,
                 }
-            ]
-    else:
-        print("No Bottling!")
-        return []
+        )
+    if barrel_stock.green_ml >= 100:
+        plan.append(
+                {
+                    "potion_type": [0, 100, 0, 0],
+                    "quantity": barrel_stock.green_ml // 100,
+                }
+        )
+
+    if barrel_stock.blue_ml >= 100:
+        plan.append(
+                {
+                    "potion_type": [0, 0, 100, 0],
+                    "quantity": barrel_stock.blue_ml // 100,
+                }
+        )
+    
+    return plan

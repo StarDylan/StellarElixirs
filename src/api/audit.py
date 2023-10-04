@@ -18,7 +18,7 @@ def get_inventory():
         total_potions += potion.quantity
 
     return {"number_of_potions": total_potions, 
-            "ml_in_barrels": db.get_red_ml(), 
+            "ml_in_barrels": db.get_barrel_stock().all_ml(), 
             "gold": db.get_gold()}
 
 class Result(BaseModel):
