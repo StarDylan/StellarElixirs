@@ -16,7 +16,7 @@ engine = create_engine(database_connection_url(), pool_pre_ping=True)
 
 
 def get_gold():
-    """ """
+    """Return the current amount of gold in the global inventory"""
     with engine.begin() as connection:
         result = connection.execute(
             sqlalchemy.text("SELECT gold FROM global_inventory")
@@ -24,14 +24,14 @@ def get_gold():
         return result[0]
     
 def add_gold(gold_to_add: int):
-    """ """
+    """Add the specified amount of gold to the global inventory"""
     with engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(f"UPDATE global_inventory SET gold=gold + {gold_to_add}")
         )
 
 def add_barrel_stock(new_barrels: BarrelStock):
-    """ """
+    """Add the specified amount of each color to the global inventory"""
     with engine.begin() as connection:
         connection.execute(
            sqlalchemy.text( f"UPDATE global_inventory \
@@ -42,7 +42,7 @@ def add_barrel_stock(new_barrels: BarrelStock):
         )
 
 def get_barrel_stock():
-    """ """
+    """Return the current amount of each color in the global inventory"""
     with engine.begin() as connection:
         result = connection.execute(
             sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
@@ -52,7 +52,7 @@ def get_barrel_stock():
 
     
 def add_potions(quantity: int, red: int, green: int, blue: int, dark: int):
-    """ """
+    """Add the specified amount of potions of specific type to the inventory"""
 
     if red + green + blue + dark != 100:
         raise ValueError(f"Potion components must add up to 100 \
@@ -81,7 +81,7 @@ def add_potions(quantity: int, red: int, green: int, blue: int, dark: int):
                                 AND blue={blue} AND dark={dark}")
             )
 def get_potions() -> t.List[PotionEntry]:
-    """ """
+    """Return a list of all potions in the inventory"""
     with engine.begin() as connection:
         result = connection.execute(
             sqlalchemy.text("SELECT red, green, blue, dark, quantity \
@@ -91,6 +91,9 @@ def get_potions() -> t.List[PotionEntry]:
         return [PotionEntry(*row) for row in result]
     
 def reset():
+    """Reset the game state. 
+    Gold goes to 100, All potions are removed,
+    All barrels are removed, Carts are all reset."""
     with engine.begin() as connection:
         connection.execute(
             sqlalchemy.text(f"UPDATE global_inventory SET gold={STARTING_GOLD}")
