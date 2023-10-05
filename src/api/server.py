@@ -1,4 +1,4 @@
-from fastapi import FastAPI, exceptions
+from fastapi import FastAPI, exceptions, Depends
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from asgi_correlation_id import CorrelationIdMiddleware
@@ -14,7 +14,6 @@ Shine Bright with Stellar Elixirs: Your Celestial Source for Magical Potions
 
 dotenv.load_dotenv()
 
-init_logger()
 
 app = FastAPI(
     title="Stellar Elixirs",
@@ -27,14 +26,16 @@ app = FastAPI(
     },
 )
 
+(log_request_info) = init_logger(app)
+
 app.add_middleware(CorrelationIdMiddleware)
 
-app.include_router(audit.router)
-app.include_router(carts.router)
-app.include_router(catalog.router)
-app.include_router(bottler.router)
-app.include_router(barrels.router)
-app.include_router(admin.router)
+app.include_router(audit.router, dependencies=[Depends(log_request_info)])
+app.include_router(carts.router, dependencies=[Depends(log_request_info)])
+app.include_router(catalog.router, dependencies=[Depends(log_request_info)])
+app.include_router(bottler.router, dependencies=[Depends(log_request_info)])
+app.include_router(barrels.router, dependencies=[Depends(log_request_info)])
+app.include_router(admin.router, dependencies=[Depends(log_request_info)])
 
 @app.exception_handler(exceptions.RequestValidationError)
 @app.exception_handler(ValidationError)
