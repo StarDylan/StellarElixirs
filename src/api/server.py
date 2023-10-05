@@ -1,13 +1,20 @@
 from fastapi import FastAPI, exceptions
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
+from asgi_correlation_id import CorrelationIdMiddleware
 from src.api import audit, carts, catalog, bottler, barrels, admin
+from src.logger_init import init_logger
 import json
 import logging
+import dotenv
 
 description = """
 Shine Bright with Stellar Elixirs: Your Celestial Source for Magical Potions
 """
+
+dotenv.load_dotenv()
+
+init_logger()
 
 app = FastAPI(
     title="Stellar Elixirs",
@@ -19,6 +26,8 @@ app = FastAPI(
         "email": "dstarink@calpoly.edu",
     },
 )
+
+app.add_middleware(CorrelationIdMiddleware)
 
 app.include_router(audit.router)
 app.include_router(carts.router)

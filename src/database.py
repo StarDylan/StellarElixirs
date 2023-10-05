@@ -8,8 +8,6 @@ from src.constants import STARTING_GOLD
 from src.models import BarrelDelta, BarrelStock, CartEntry, PotionEntry, PotionType
 
 def database_connection_url():
-    dotenv.load_dotenv()
-
     return os.environ.get("POSTGRES_URI")
 
 engine = create_engine(database_connection_url(), pool_pre_ping=True)
