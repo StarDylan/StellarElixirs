@@ -1,9 +1,8 @@
 from fastapi import FastAPI, exceptions, Depends
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
-from asgi_correlation_id import CorrelationIdMiddleware
 from src.api import audit, carts, catalog, bottler, barrels, admin
-from src.logger_init import init_logger
+from src.logger_init import init_logger, log_request_info
 import json
 import logging
 import dotenv
@@ -24,18 +23,19 @@ app = FastAPI(
         "name": "Dylan Starink",
         "email": "dstarink@calpoly.edu",
     },
+    dependencies=[Depends(log_request_info)]
 )
+
+logging.getLogger().setLevel(logging.INFO)
 
 (log_request_info) = init_logger(app)
 
-app.add_middleware(CorrelationIdMiddleware)
-
-app.include_router(audit.router, dependencies=[Depends(log_request_info)])
-app.include_router(carts.router, dependencies=[Depends(log_request_info)])
-app.include_router(catalog.router, dependencies=[Depends(log_request_info)])
-app.include_router(bottler.router, dependencies=[Depends(log_request_info)])
-app.include_router(barrels.router, dependencies=[Depends(log_request_info)])
-app.include_router(admin.router, dependencies=[Depends(log_request_info)])
+app.include_router(audit.router)
+app.include_router(carts.router)
+app.include_router(catalog.router)
+app.include_router(bottler.router)
+app.include_router(barrels.router)
+app.include_router(admin.router)
 
 @app.exception_handler(exceptions.RequestValidationError)
 @app.exception_handler(ValidationError)

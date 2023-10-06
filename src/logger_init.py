@@ -1,49 +1,30 @@
 import os
 import logging
+from fastapi import FastAPI
 import graypy
 import time
 import random
-from asgi_correlation_id import CorrelationIdFilter
+import json
+from asgi_correlation_id import CorrelationIdFilter, CorrelationIdMiddleware
 from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 
 class StellarElixirId(logging.Filter):
     def __init__(self):
         is_prod = os.environ.get("IS_PROD")
         if is_prod:
-            self.is_prod = True
+            self.is_prod = "True"
         else:
-            self.is_prod = False
+            self.is_prod = "False"
     def filter(self, record):
         record.app = "Stellar Elixirs"
         record.prod = self.is_prod
         return True
 
 
-def init_logger(app):
-    graylog_url = os.environ.get("GRAYLOG_URL")
-    graylog_port = os.environ.get("GRAYLOG_PORT")
-    
-    root_logger = logging.getLogger()
-
-    async def log_request_info(request: Request):
-        
-        logger = logging.LoggerAdapter(logging.getLogger("router"))
-        request_body = await request.body()
-
-        logger.info(
-            f"{request.method} request to {request.url.path}",
-            extra={"Headers": request.headers, 
-                   "Body": request_body,
-                   "Path Params": request.path_params, 
-                   "Query Params": request.query_params,
-                   "Cookies": request.cookies}
-        )
-
-
-        
-    @app.middleware("http")
-    async def log_failures(request: Request, call_next):
-        logger = logging.LoggerAdapter(logging.getLogger("middleware"))
+class LogFailureMiddleware:
+    async def __call__(self, request: Request, call_next):
+        logger = logging.getLogger("middleware")
 
         response = None
 
@@ -56,6 +37,39 @@ def init_logger(app):
         
         return response
 
+async def log_request_info(request: Request):
+        
+        logger = logging.getLogger("router")
+        request_body = await request.body()
+
+        header_dict = {}
+        for item in request.headers.items():
+            header_dict[item[0]] = item[1]
+
+        query_dict = {}
+        for item in request.query_params.items():
+            query_dict[item[0]] = item[1]
+
+        logger.info(
+            f"{request.method} request to {request.url.path}",
+            extra={"headers": json.dumps(header_dict), 
+                   "body": request_body,
+                   "path_params": json.dumps(request.path_params), 
+                   "query_params": json.dumps(query_dict)}
+        )
+
+
+def init_logger(app: FastAPI):
+    graylog_url = os.environ.get("GRAYLOG_URL")
+    graylog_port = os.environ.get("GRAYLOG_PORT")
+    
+    root_logger = logging.getLogger()
+
+    app.add_middleware(CorrelationIdMiddleware)
+    app.add_middleware(BaseHTTPMiddleware, dispatch=LogFailureMiddleware())
+        
+   
+
     if graylog_url and graylog_port:
         if graylog_port.isdigit():
             graylog_port = int(graylog_port)
@@ -66,18 +80,16 @@ def init_logger(app):
         logging.info("Enabling Graylog!")
 
 
-        gelf_handler = graypy.GELFTCPHandler(graylog_url, int(graylog_port))
+        gelf_handler = graypy.GELFTCPHandler(graylog_url, int(graylog_port), 
+            level_names=True)
+        gelf_handler.addFilter(StellarElixirId())
+        gelf_handler.addFilter(CorrelationIdFilter())
+
         root_logger.addHandler(gelf_handler)
 
         
-        root_logger.addFilter(StellarElixirId())
     else:
         logging.warning("Graylog not enabled")
     
-    
-    root_logger.addFilter(CorrelationIdFilter())
 
-
-    logging.info('Finished Log Initialization')
-
-    return (log_request_info)
+    logging.debug('Finished Log Initialization')

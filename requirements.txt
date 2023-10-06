@@ -7,3 +7,4 @@ graypy==2.1.0
 python-dotenv
 pre-commit
 asgi-correlation-id
+email-validator
