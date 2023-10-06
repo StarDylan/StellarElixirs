@@ -80,9 +80,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
     # Remove Specified Potions from Inventory
     for cart_entry in cart_contents:
-        new_entry = db.add_potions_by_id(cart_entry.potion_id, -cart_entry.quantity)
+        potion_entry = db.add_potions_by_id(cart_entry.potion_id, -cart_entry.quantity)
 
-        total_price += new_entry.price * cart_entry.quantity
+        total_price += potion_entry.price * cart_entry.quantity
         total_potions += cart_entry.quantity
 
     # Add Gold Gold

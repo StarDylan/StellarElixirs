@@ -54,7 +54,7 @@ def get_cart_contents(cart_id: int) -> t.List[CartEntry]:
         ).all()
 
         
-        return [CartEntry(*row) for row in result]
+        return [CartEntry(row.potion_id, row.quantity) for row in result]
 
 def delete_cart(cart_id: int):
     """Delete the specified cart and associated contents"""
@@ -96,7 +96,8 @@ def get_barrel_stock() -> BarrelStock:
             sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
                                 FROM global_inventory")
         ).one()
-        return BarrelStock(*result)
+        return BarrelStock(result.num_red_ml, result.num_green_ml, 
+                           result.num_blue_ml, result.num_dark_ml)
 
     
 def add_potions_by_type(potion_type: PotionType, quantity: int):
@@ -155,7 +156,9 @@ def add_potions_by_id(potion_id: int, quantity: int) -> PotionEntry:
                                 )
             ).first()
 
-            return PotionEntry.from_db(*results)
+            return PotionEntry.from_db(results.id, results.red, results.green, 
+                                       results.blue, results.dark, results.quantity, 
+                                       results.sku, results.price)
 
 
 def get_potion_by_sku(sku: str) -> PotionEntry | None:
@@ -168,7 +171,9 @@ def get_potion_by_sku(sku: str) -> PotionEntry | None:
         ).first()
         if result is None:
             return None
-        return PotionEntry.from_db(*result)
+        return PotionEntry.from_db(result.id, result.red, result.green, 
+                                    result.blue, result.dark, result.quantity, 
+                                    result.sku, result.price)
     
 def get_potion_by_id(id: int) -> PotionEntry | None:
     """Return the potion with the specified id"""
@@ -180,7 +185,9 @@ def get_potion_by_id(id: int) -> PotionEntry | None:
         ).first()
         if result is None:
             return None
-        return PotionEntry.from_db(*result)
+        return PotionEntry.from_db(result.id, result.red, result.green, 
+                                    result.blue, result.dark, result.quantity, 
+                                    result.sku, result.price)
     
     
 
@@ -192,7 +199,8 @@ def get_potions() -> t.List[PotionEntry]:
                                 FROM potion_inventory")
         ).all()
         
-        return [PotionEntry.from_db(*row) for row in result]
+        return [PotionEntry.from_db(row.id, row.red, row.green, row.blue, row.dark, 
+                                    row.quantity, row.sku, row.price) for row in result]
     
 def reset():
     """Reset the game state. 
