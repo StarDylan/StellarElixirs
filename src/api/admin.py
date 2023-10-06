@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Depends
 from src.api import auth
 from src import database as db
+import logging
+
+logger = logging.getLogger("admin")
 
 router = APIRouter(
     prefix="/admin",
@@ -15,12 +18,17 @@ def reset():
     inventory, and all barrels are removed from inventory. Carts are all reset.
     """
 
+    logger.info("Resetting Shop State")
+
     db.reset()
 
 
 @router.get("/shop_info/")
 def get_shop_info():
     """ """
+
+    logger.info("Someone getting Shop Info")
+
     return {
         "shop_name": "Stellar Elixirs",
         "shop_owner": "Dylan Starink",

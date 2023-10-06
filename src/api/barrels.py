@@ -25,7 +25,6 @@ class Barrel(BaseModel):
 @router.post("/deliver")
 def post_deliver_barrels(barrels_delivered: list[Barrel]):
     """ """
-    print(barrels_delivered)
 
     barrel_delta = BarrelDelta.init_zero()
     gold_paid = 0
