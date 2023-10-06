@@ -1,13 +1,18 @@
-from fastapi import FastAPI, exceptions
+from fastapi import FastAPI, exceptions, Depends
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from src.api import audit, carts, catalog, bottler, barrels, admin
+from src.logger_init import init_logger, log_request_info
 import json
 import logging
+import dotenv
 
 description = """
 Shine Bright with Stellar Elixirs: Your Celestial Source for Magical Potions
 """
+
+dotenv.load_dotenv()
+
 
 app = FastAPI(
     title="Stellar Elixirs",
@@ -18,7 +23,12 @@ app = FastAPI(
         "name": "Dylan Starink",
         "email": "dstarink@calpoly.edu",
     },
+    dependencies=[Depends(log_request_info)]
 )
+
+logging.getLogger().setLevel(logging.INFO)
+
+(log_request_info) = init_logger(app)
 
 app.include_router(audit.router)
 app.include_router(carts.router)

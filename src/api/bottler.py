@@ -2,6 +2,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 from src import database as db
+from src.models import BarrelDelta, PotionType
+import logging
+
+logger = logging.getLogger("bottler")
 
 router = APIRouter(
     prefix="/bottler",
@@ -17,26 +21,25 @@ class PotionInventory(BaseModel):
 def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     print(potions_delivered)
+
+    barrel_delta = BarrelDelta.init_zero()
     
+    for delivered_potion in potions_delivered:
+        db.add_potions_by_type(
+            PotionType.from_array(delivered_potion.potion_type), 
+            delivered_potion.quantity)
 
-    red = 0
-    for potion in potions_delivered:
-        red += potion.quantity
+        barrel_delta.remove_stock(delivered_potion.potion_type, 
+                                  delivered_potion.quantity)
 
-    red_ml_used = 0
-    for bottle in potions_delivered:
-        red_ml_used += bottle.quantity * bottle.potion_type[0]
+    db.add_barrel_stock(barrel_delta)
 
-    
-    existing_red = db.get_red_potions()
-    existing_ml = db.get_red_ml()
-
-    db.add_red_ml(-red_ml_used)
-    db.add_red_potions(red)
-
-    print("Barrels Recieved!")
-    print(f"Red ML go from {existing_ml} to {existing_ml - red_ml_used}")
-    print(f"Red potions go from {existing_red} to {existing_red + red}")
+    logger.info("Recieved Bottles", extra={
+        "ml_used_red": -barrel_delta.red_ml,
+        "ml_used_green": -barrel_delta.green_ml,
+        "ml_used_blue": -barrel_delta.blue_ml,
+        "ml_used_dark": -barrel_delta.dark_ml,
+    })
 
     return "OK"
 
@@ -46,26 +49,64 @@ def get_bottle_plan():
     """
     Go from barrel to bottle.
     """
-    num_red_ml = db.get_red_ml()
 
-    print("Bottler Plan!")
-    print(f"Red ML: {num_red_ml}")
+    # Each bottle has a quantity of what proportion of red, blue, and
+    # green potion to add.
+    # Expressed in integers from 1 to 100 that must sum up to 100.
 
-    if num_red_ml >= 100:
 
-        # Each bottle has a quantity of what proportion of red, blue, and
-        # green potion to add.
-        # Expressed in integers from 1 to 100 that must sum up to 100.
+    barrel_stock = db.get_barrel_stock()
 
-        # Initial logic: bottle all barrels into red potions.
+    
 
-        print(f"Number of Bottled potions = {num_red_ml // 100}")
-        return [
+    plan = []
+
+    red_quantity = barrel_stock.red_ml // 100
+    green_quantity = barrel_stock.green_ml // 100
+    blue_quantity = barrel_stock.blue_ml // 100
+
+    if barrel_stock.red_ml >= 100:
+        plan.append(
                 {
                     "potion_type": [100, 0, 0, 0],
-                    "quantity": num_red_ml // 100,
+                    "quantity": red_quantity,
                 }
-            ]
+        )
+    if barrel_stock.green_ml >= 100:
+        plan.append(
+                {
+                    "potion_type": [0, 100, 0, 0],
+                    "quantity": green_quantity,
+                }
+        )
+
+    if barrel_stock.blue_ml >= 100:
+        plan.append(
+                {
+                    "potion_type": [0, 0, 100, 0],
+                    "quantity": blue_quantity,
+                }
+        )
+    
+    if len(plan) == 0:
+        logger.info("Not enough barrel stock to bottle", extra={
+            "ml_red": barrel_stock.red_ml,
+            "ml_green": barrel_stock.green_ml,
+            "ml_blue": barrel_stock.blue_ml,
+            "ml_dark": barrel_stock.dark_ml,
+        })
     else:
-        print("No Bottling!")
-        return []
+
+        total_potions = red_quantity + green_quantity + blue_quantity
+        logger.info(f"Planning Bottles, Bottling {total_potions} potions", extra={
+            "ml_red": barrel_stock.red_ml,
+            "ml_green": barrel_stock.green_ml,
+            "ml_blue": barrel_stock.blue_ml,
+            "ml_dark": barrel_stock.dark_ml,
+            "bottling_red_potions": red_quantity,
+            "bottling_green_potions": green_quantity,
+            "bottling_blue_potions": blue_quantity
+        })
+
+    
+    return plan
