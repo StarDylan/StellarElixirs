@@ -2,7 +2,9 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 from src import database as db
-import sqlalchemy
+import logging
+
+logger = logging.getLogger("carts")
 
 router = APIRouter(
     prefix="/carts",
@@ -20,7 +22,10 @@ def create_cart(new_cart: NewCart):
     """ """
     new_cart_id = db.create_cart(new_cart.customer)
         
-    print(f"Creating cart {new_cart_id}")
+    logger.info(f"Creating cart {new_cart_id}", extra={
+        "cart_id": new_cart_id
+    })
+
     return {"cart_id": new_cart_id}
 
 
@@ -38,15 +43,25 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-    print(f"Set item quantity of {item_sku} to {cart_item.quantity} in cart {cart_id}")
-
     
     potion_id = db.get_potion_by_sku(item_sku).id
 
     if potion_id is None:
+        logger.error("Tried to get potion ID from SKU, but got None", extra={
+            "item_sku": item_sku,
+        })
         return f"Error: SKU '{item_sku}' not found"
 
     db.set_item_in_cart(cart_id, potion_id, cart_item.quantity)
+
+    logger.info(f"Set {item_sku} to {cart_item.quantity} in #{cart_id}",
+        extra={
+            "cart_id": cart_id,
+            "item_sku": item_sku,
+            "quantity": cart_item.quantity,
+            "potion_id": potion_id
+        }
+    )
 
     return "OK"
 
@@ -57,8 +72,12 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    print(f"Checkout cart #{cart_id}, Payment: {cart_checkout}")
-
+    logger.info(f"Checking out #{cart_id} with payment {cart_checkout.payment}",
+        extra={
+            "cart_id": cart_id,
+            "payment": cart_checkout.payment,
+        }
+    )
 
     cart_contents = db.get_cart_contents(cart_id)
 
@@ -78,6 +97,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     # Delete Cart and Contents
     db.delete_cart(cart_id)
 
-    print(f"Cart #{cart_id} has been checked out with {total_potions} potions")
+    logger.info(f"Cart #{cart_id} has been checked out", extra={  # noqa: E501
+        "total_potions_bought": total_potions,
+        "total_gold_paid": total_price
+    })
 
     return {"total_potions_bought": total_potions, "total_gold_paid": total_price}

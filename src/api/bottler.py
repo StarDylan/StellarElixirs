@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 from src import database as db
-from src.models import BarrelDelta, BarrelStock, PotionType
+from src.models import BarrelDelta, PotionType
+import logging
+
+logger = logging.getLogger("bottler")
 
 router = APIRouter(
     prefix="/bottler",
@@ -31,7 +34,12 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
 
     db.add_barrel_stock(barrel_delta)
 
-    print("Barrels Recieved!")
+    logger.info("Recieved Bottles", extra={
+        "ml_used_red": -barrel_delta.red_ml,
+        "ml_used_green": -barrel_delta.green_ml,
+        "ml_used_blue": -barrel_delta.blue_ml,
+        "ml_used_dark": -barrel_delta.dark_ml,
+    })
 
     return "OK"
 
@@ -49,28 +57,44 @@ def get_bottle_plan():
 
     barrel_stock = db.get_barrel_stock()
 
+    logger.info("Starting Bottle Planning", extra={
+        "ml_red": barrel_stock.red_ml,
+        "ml_green": barrel_stock.green_ml,
+        "ml_blue": barrel_stock.blue_ml,
+        "ml_dark": barrel_stock.dark_ml
+    })
+
     plan = []
 
     if barrel_stock.red_ml >= 100:
+        quantity = barrel_stock.red_ml // 100
+
+        logger.info(f"Bottling {quantity} red potions")
         plan.append(
                 {
                     "potion_type": [100, 0, 0, 0],
-                    "quantity": barrel_stock.red_ml // 100,
+                    "quantity": quantity,
                 }
         )
     if barrel_stock.green_ml >= 100:
+        quantity = barrel_stock.green_ml // 100
+
+        logger.info(f"Bottling {quantity} green potions")
         plan.append(
                 {
                     "potion_type": [0, 100, 0, 0],
-                    "quantity": barrel_stock.green_ml // 100,
+                    "quantity": quantity,
                 }
         )
 
     if barrel_stock.blue_ml >= 100:
+        quantity = barrel_stock.blue_ml // 100
+
+        logger.info(f"Bottling {quantity} blue potions")
         plan.append(
                 {
                     "potion_type": [0, 0, 100, 0],
-                    "quantity": barrel_stock.blue_ml // 100,
+                    "quantity": quantity,
                 }
         )
     

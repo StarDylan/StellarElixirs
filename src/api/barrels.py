@@ -3,6 +3,9 @@ from pydantic import BaseModel
 from src.api import auth
 from src import database as db
 from src.models import BarrelDelta
+import logging
+
+logger = logging.getLogger("barrels")
 
 router = APIRouter(
     prefix="/barrels",
@@ -35,7 +38,13 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     db.add_gold(-gold_paid)
     db.add_barrel_stock(barrel_delta)
 
-    print("Barrels Recieved!")
+    logger.info(f"Recieved Barrels, paid {gold_paid} gold", extra={
+        "ml_added_red": barrel_delta.red_ml,
+        "ml_added_green": barrel_delta.green_ml,
+        "ml_added_blue": barrel_delta.blue_ml,
+        "ml_added_dark": barrel_delta.dark_ml,
+        "gold_paid": gold_paid,
+    })
 
     return "OK"
 
@@ -43,15 +52,14 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
-    print(wholesale_catalog)
-
-
     gold = db.get_gold()
-    
-    print("Wholesale Catalog Recieved!")
+
+    logger.info("Starting Barrel Planning", extra={
+        "gold": gold
+    })
 
     if gold >= 100 and gold < 300:
-        print("Buy SMALL_RED_BARREL")
+        logger.info("Buying SMALL_RED_BARREL")
         return [
             {
                 "sku": "SMALL_RED_BARREL",
@@ -60,7 +68,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         ]
 
     if gold >= 300:
-        print("Buy ALL COLORS")
+        logger.info("Buying red, green, blue barrels")
         return [
             {
                 "sku": "SMALL_RED_BARREL",
@@ -78,5 +86,5 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     
         
     else:
-        print("Buy Nothing")
+        logger.info("We don't have enough money, can't buy anything")
         return []

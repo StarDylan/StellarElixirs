@@ -1,5 +1,9 @@
 from fastapi import APIRouter
 from src import database as db
+import logging
+import json
+
+logger = logging.getLogger("catalog")
 
 router = APIRouter()
 
@@ -10,13 +14,13 @@ def get_catalog():
     Each unique item combination must have only a single price.
     """
 
-    print("Customer Getting catalog")
+    logger.info("Customer Getting catalog")
 
     # Can return a max of 20 items.
     potions_to_sell = db.get_potions()[:20]
     
     if len(potions_to_sell) == 0:
-        print("No potions in inventory")
+        logger.info("No potions in inventory to list in catalog")
         return []
     else:
         catalog = []
@@ -28,5 +32,9 @@ def get_catalog():
                 "price": potion_entry.price,
                 "potion_type": potion_entry.potion_type.to_array(),
             })
+        
+        logger.info("Giving out catalog", extra={
+            "catalog": json.dumps(catalog)
+        })
         
         return catalog
