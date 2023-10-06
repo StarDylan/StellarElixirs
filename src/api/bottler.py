@@ -98,4 +98,12 @@ def get_bottle_plan():
                 }
         )
     
+    if len(plan) == 0:
+        logger.info("Not enough barrel stock to bottle", extra={
+        "ml_red": barrel_stock.red_ml,
+        "ml_green": barrel_stock.green_ml,
+        "ml_blue": barrel_stock.blue_ml,
+        "ml_dark": barrel_stock.dark_ml,
+    })
+    
     return plan
