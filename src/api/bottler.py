@@ -57,53 +57,56 @@ def get_bottle_plan():
 
     barrel_stock = db.get_barrel_stock()
 
-    logger.info("Starting Bottle Planning", extra={
-        "ml_red": barrel_stock.red_ml,
-        "ml_green": barrel_stock.green_ml,
-        "ml_blue": barrel_stock.blue_ml,
-        "ml_dark": barrel_stock.dark_ml
-    })
+    
 
     plan = []
 
-    if barrel_stock.red_ml >= 100:
-        quantity = barrel_stock.red_ml // 100
+    red_quantity = barrel_stock.red_ml // 100
+    green_quantity = barrel_stock.green_ml // 100
+    blue_quantity = barrel_stock.blue_ml // 100
 
-        logger.info(f"Bottling {quantity} red potions")
+    if barrel_stock.red_ml >= 100:
         plan.append(
                 {
                     "potion_type": [100, 0, 0, 0],
-                    "quantity": quantity,
+                    "quantity": red_quantity,
                 }
         )
     if barrel_stock.green_ml >= 100:
-        quantity = barrel_stock.green_ml // 100
-
-        logger.info(f"Bottling {quantity} green potions")
         plan.append(
                 {
                     "potion_type": [0, 100, 0, 0],
-                    "quantity": quantity,
+                    "quantity": green_quantity,
                 }
         )
 
     if barrel_stock.blue_ml >= 100:
-        quantity = barrel_stock.blue_ml // 100
-
-        logger.info(f"Bottling {quantity} blue potions")
         plan.append(
                 {
                     "potion_type": [0, 0, 100, 0],
-                    "quantity": quantity,
+                    "quantity": blue_quantity,
                 }
         )
     
     if len(plan) == 0:
         logger.info("Not enough barrel stock to bottle", extra={
-        "ml_red": barrel_stock.red_ml,
-        "ml_green": barrel_stock.green_ml,
-        "ml_blue": barrel_stock.blue_ml,
-        "ml_dark": barrel_stock.dark_ml,
-    })
+            "ml_red": barrel_stock.red_ml,
+            "ml_green": barrel_stock.green_ml,
+            "ml_blue": barrel_stock.blue_ml,
+            "ml_dark": barrel_stock.dark_ml,
+        })
+    else:
+
+        total_potions = red_quantity + green_quantity + blue_quantity
+        logger.info(f"Planning Bottles, Bottling {total_potions} potions", extra={
+            "ml_red": barrel_stock.red_ml,
+            "ml_green": barrel_stock.green_ml,
+            "ml_blue": barrel_stock.blue_ml,
+            "ml_dark": barrel_stock.dark_ml,
+            "bottling_red_potions": red_quantity,
+            "bottling_green_potions": green_quantity,
+            "bottling_blue_potions": blue_quantity
+        })
+
     
     return plan

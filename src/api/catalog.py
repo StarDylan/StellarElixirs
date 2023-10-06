@@ -14,8 +14,6 @@ def get_catalog():
     Each unique item combination must have only a single price.
     """
 
-    logger.info("Customer Getting catalog")
-
     # Can return a max of 20 items.
     potions_to_sell = db.get_potions()[:20]
     
@@ -33,7 +31,7 @@ def get_catalog():
                 "potion_type": potion_entry.potion_type.to_array(),
             })
         
-        logger.info("Giving out catalog", extra={
+        logger.info("Customer Requested catalog", extra={
             "catalog": json.dumps(catalog)
         })
         

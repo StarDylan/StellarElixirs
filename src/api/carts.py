@@ -72,12 +72,6 @@ class CartCheckout(BaseModel):
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
-    logger.info(f"Checking out #{cart_id} with payment {cart_checkout.payment}",
-        extra={
-            "cart_id": cart_id,
-            "payment": cart_checkout.payment,
-        }
-    )
 
     cart_contents = db.get_cart_contents(cart_id)
 
@@ -98,6 +92,8 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     db.delete_cart(cart_id)
 
     logger.info(f"Cart #{cart_id} has been checked out", extra={  # noqa: E501
+        "cart_id": cart_id,
+        "payment": cart_checkout.payment,
         "total_potions_bought": total_potions,
         "total_gold_paid": total_price
     })
