@@ -27,22 +27,22 @@ def set_item_in_cart(cart_id: int, potion_id: int, quantity: int):
     with engine.begin() as connection:
         existing_quantity_or_none = connection.execute(
             sqlalchemy.text(f"SELECT quantity \
-                                FROM cart_transaction \
-                                WHERE potion_id={potion_id}")).first()
+                                FROM cart_contents \
+                                WHERE potion_id = {potion_id}")).first()
         
         if existing_quantity_or_none is None:
 
             connection.execute(
                 sqlalchemy.text(f"INSERT INTO cart_contents \
-                                (cart_id, potion_id, quantity, price) \
+                                (cart_id, potion_id, quantity) \
                                 VALUES ({cart_id}, {potion_id}, {quantity})")
             )
         else:
             connection.execute(
                 sqlalchemy.text(f"UPDATE cart_contents \
-                                SET quantity={quantity} \
-                                WHERE potion_id={potion_id} \
-                                AND cart_id={cart_id}"))
+                                SET quantity = {quantity} \
+                                WHERE potion_id = {potion_id} \
+                                AND cart_id = {cart_id}"))
 
 def get_cart_contents(cart_id: int) -> t.List[CartEntry]:
     """Return a list of all potions in the cart"""
@@ -50,7 +50,7 @@ def get_cart_contents(cart_id: int) -> t.List[CartEntry]:
         result = connection.execute(
             sqlalchemy.text(f"SELECT potion_id, quantity \
                                 FROM cart_contents \
-                                WHERE cart_id={cart_id}")
+                                WHERE cart_id = {cart_id}")
         ).all()
 
         
@@ -83,10 +83,10 @@ def add_barrel_stock(barrel_delta: BarrelDelta):
     with engine.begin() as connection:
         connection.execute(
            sqlalchemy.text( f"UPDATE global_inventory \
-                            SET num_red_ml=num_red_ml + {barrel_delta.red_ml} \
-                            SET num_green_ml=num_green_ml + {barrel_delta.green_ml} \
-                            SET num_blue_ml=num_blue_ml + {barrel_delta.blue_ml} \
-                            SET num_dark_ml=num_dark_ml + {barrel_delta.dark_ml}")
+                            SET num_red_ml = num_red_ml + {barrel_delta.red_ml}, \
+                                num_green_ml = num_green_ml + {barrel_delta.green_ml}, \
+                                num_blue_ml = num_blue_ml + {barrel_delta.blue_ml}, \
+                                num_dark_ml = num_dark_ml + {barrel_delta.dark_ml}")
         )
 
 def get_barrel_stock() -> BarrelStock:
@@ -106,21 +106,21 @@ def add_potions_by_type(potion_type: PotionType, quantity: int):
 
     if potion_type.red + potion_type.green + potion_type.blue + potion_type.dark != 100:
         raise ValueError(f"Potion components must add up to 100 \
-                            \n(red={potion_type.red}, \
-                            green={potion_type.green}, \
-                            blue={potion_type.blue}, \
-                            dark={potion_type.dark}) \
-                            @ quantity={quantity}")
+                            \n(red = {potion_type.red}, \
+                            green = {potion_type.green}, \
+                            blue = {potion_type.blue}, \
+                            dark = {potion_type.dark}) \
+                            @ quantity = {quantity}")
 
     with engine.begin() as connection:
         
         existing_potion_amount_or_none = connection.execute(
             sqlalchemy.text(f"SELECT quantity \
                                 FROM potion_inventory \
-                                WHERE red={potion_type.red} \
-                                AND green={potion_type.green} \
-                                AND blue={potion_type.blue} \
-                                AND dark={potion_type.dark}")).first()
+                                WHERE red = {potion_type.red} \
+                                AND green = {potion_type.green} \
+                                AND blue = {potion_type.blue} \
+                                AND dark = {potion_type.dark}")).first()
 
         if existing_potion_amount_or_none is None:
 
@@ -135,7 +135,7 @@ def add_potions_by_type(potion_type: PotionType, quantity: int):
         else:
             connection.execute(
                 sqlalchemy.text(f"UPDATE potion_inventory \
-                                SET quantity=quantity + {quantity} \
+                                SET quantity = quantity + {quantity} \
                                 WHERE red={potion_type.red} \
                                 AND green={potion_type.green} \
                                 AND blue={potion_type.blue} \
@@ -149,38 +149,38 @@ def add_potions_by_id(potion_id: int, quantity: int) -> PotionEntry:
     with engine.begin() as connection:
             results = connection.execute(
                 sqlalchemy.text(f"UPDATE potion_inventory \
-                                SET quantity=quantity + {quantity} \
+                                SET quantity = quantity + {quantity} \
                                 WHERE id={potion_id} \
-                                RETURNING red, green, blue, dark, quantity, sku, price"
+                                RETURNING id, red, green, blue, dark, quantity, sku, price"  # noqa: E501
                                 )
             ).first()
 
-            return PotionEntry(*results)
+            return PotionEntry.from_db(*results)
 
 
 def get_potion_by_sku(sku: str) -> PotionEntry | None:
     """Return the potion id with the specified sku"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text(f"SELECT red, green, blue, dark, quantity, sku, price \
+            sqlalchemy.text(f"SELECT id, red, green, blue, dark, quantity, sku, price \
                                 FROM potion_inventory \
-                                WHERE sku=\'{sku}\'")
+                                WHERE sku = \'{sku}\'")
         ).first()
         if result is None:
             return None
-        return PotionEntry(*result)
+        return PotionEntry.from_db(*result)
     
 def get_potion_by_id(id: int) -> PotionEntry | None:
     """Return the potion with the specified id"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text(f"SELECT red, green, blue, dark, quantity, sku, price \
+            sqlalchemy.text(f"SELECT id, red, green, blue, dark, quantity, sku, price \
                                 FROM potion_inventory \
-                                WHERE id={id}")
+                                WHERE id = {id}")
         ).first()
         if result is None:
             return None
-        return PotionEntry(*result)
+        return PotionEntry.from_db(*result)
     
     
 
@@ -188,11 +188,11 @@ def get_potions() -> t.List[PotionEntry]:
     """Return a list of all potions in the inventory"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT red, green, blue, dark, quantity, sku, price \
+            sqlalchemy.text("SELECT id, red, green, blue, dark, quantity, sku, price \
                                 FROM potion_inventory")
         ).all()
         
-        return [PotionEntry(*row) for row in result]
+        return [PotionEntry.from_db(*row) for row in result]
     
 def reset():
     """Reset the game state. 
@@ -200,7 +200,7 @@ def reset():
     All barrels are removed, Carts are all reset."""
     with engine.begin() as connection:
         connection.execute(
-            sqlalchemy.text(f"UPDATE global_inventory SET gold={STARTING_GOLD}")
+            sqlalchemy.text(f"UPDATE global_inventory SET gold = {STARTING_GOLD}")
         )
 
         connection.execute(

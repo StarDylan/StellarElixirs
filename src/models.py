@@ -1,4 +1,5 @@
 import typing as t
+from dataclasses import dataclass
 
 class PotionType(t.NamedTuple):
     red: int
@@ -19,6 +20,11 @@ class PotionEntry(t.NamedTuple):
     sku: str
     price: int
 
+    def from_db(id, red, green, blue, dark, quantity, sku, price):
+        potion_type = PotionType(red, green, blue, dark)
+        return PotionEntry(id, potion_type, quantity, sku, price)
+
+
 class CartEntry(t.NamedTuple):
     potion_id: int
     quantity: int
@@ -32,25 +38,25 @@ class BarrelStock(t.NamedTuple):
     def all_ml(self) -> int:
         return self.red_ml + self.green_ml + self.blue_ml + self.dark_ml
 
-class BarrelDelta(t.NamedTuple):
+@dataclass
+class BarrelDelta():
     red_ml: int
     green_ml: int
     blue_ml: int
     dark_ml: int
 
     def init_zero() -> t.Self:
-        return BarrelStock(red_ml=0, green_ml=0, blue_ml=0, dark_ml=0)
+        return BarrelDelta(red_ml=0, green_ml=0, blue_ml=0, dark_ml=0)
 
     def add_stock(self, other: t.List[int], qty: int):
-
-        self.red_ml=self.red_ml + (other[0] * qty),
-        self.green_ml=self.green_ml + (other[1] * qty),
-        self.blue_ml=self.blue_ml + (other[2] * qty),
-        self.dark_ml=self.dark_ml + (other[3] * qty),
+        self.red_ml=self.red_ml + (other[0] * qty)
+        self.green_ml=self.green_ml + (other[1] * qty)
+        self.blue_ml=self.blue_ml + (other[2] * qty)
+        self.dark_ml=self.dark_ml + (other[3] * qty)
 
 
     def remove_stock(self, other: t.List[int], qty: int) -> t.Self:
-        self.red_ml=self.red_ml - (other[0] * qty),
-        self.green_ml=self.green_ml - (other[1] * qty),
-        self.blue_ml=self.blue_ml - (other[2] * qty),
-        self.dark_ml=self.dark_ml - (other[3] * qty),
+        self.red_ml=self.red_ml - (other[0] * qty)
+        self.green_ml=self.green_ml - (other[1] * qty)
+        self.blue_ml=self.blue_ml - (other[2] * qty)
+        self.dark_ml=self.dark_ml - (other[3] * qty)

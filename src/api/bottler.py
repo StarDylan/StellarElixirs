@@ -26,7 +26,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     
     for delivered_potion in potions_delivered:
         db.add_potions_by_type(
-            PotionType.from_list(delivered_potion.potion_type), 
+            PotionType.from_array(delivered_potion.potion_type), 
             delivered_potion.quantity)
 
         barrel_delta.remove_stock(delivered_potion.potion_type, 
