@@ -23,6 +23,8 @@ def get_catalog():
     else:
         catalog = []
         for potion_entry in potions_to_sell:
+            if potion_entry.quantity == 0:
+                continue # Don't include potions we don't have
             catalog.append({
                 "sku": potion_entry.sku,
                 "name": potion_entry.sku,
@@ -31,7 +33,7 @@ def get_catalog():
                 "potion_type": potion_entry.potion_type.to_array(),
             })
         
-        logger.info("Customer Requested catalog", extra={
+        logger.info("Catalog with potions served", extra={
             "catalog": json.dumps(catalog)
         })
         
