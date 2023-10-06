@@ -2,8 +2,6 @@ import os
 import logging
 from fastapi import FastAPI
 import graypy
-import time
-import random
 import json
 from asgi_correlation_id import CorrelationIdFilter, CorrelationIdMiddleware
 from fastapi import Request, Response

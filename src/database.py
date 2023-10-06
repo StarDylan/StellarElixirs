@@ -1,5 +1,4 @@
 import os
-import dotenv
 import sqlalchemy
 from sqlalchemy import create_engine
 import typing as t
@@ -131,9 +130,7 @@ def add_potions_by_type(potion_type: PotionType, quantity: int):
             connection.execute(
                 sqlalchemy.text(f"INSERT INTO potion_inventory \
                                 (sku, red, green, blue, dark, quantity, price) \
-                                VALUES (\'{sku}\', {potion_type.red}, {potion_type.green},\
-                                {potion_type.blue}, {potion_type.dark}, {quantity}, \
-                                {price})")
+                                VALUES (\'{sku}\', {potion_type.red}, {potion_type.green}, {potion_type.blue}, {potion_type.dark}, {quantity}, {price})")  # noqa: E501
             )
         else:
             connection.execute(
