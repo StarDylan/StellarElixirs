@@ -124,8 +124,8 @@ def add_potions_by_type(potion_type: PotionType, quantity: int):
 
         if existing_potion_amount_or_none is None:
 
-            sku = f"RED{potion_type.red}_GREEN{potion_type.green}" + \
-                f"_BLUE{potion_type.blue}_DARK{potion_type.dark}"
+            sku = f"R{potion_type.red}_G{potion_type.green}" + \
+                f"_B{potion_type.blue}_D{potion_type.dark}"
             
             connection.execute(
                 sqlalchemy.text(f"INSERT INTO potion_inventory \

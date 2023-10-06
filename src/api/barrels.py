@@ -31,7 +31,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     gold_paid = 0
 
     for barrel in barrels_delivered:
-        barrel_delta.add_stock(barrel.potion_type, barrel.quantity)
+        barrel_delta.add_stock(barrel.potion_type,barrel.ml_per_barrel, barrel.quantity)
 
         gold_paid += barrel.price * barrel.quantity
 

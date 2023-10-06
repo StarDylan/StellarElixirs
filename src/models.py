@@ -48,15 +48,15 @@ class BarrelDelta():
     def init_zero() -> t.Self:
         return BarrelDelta(red_ml=0, green_ml=0, blue_ml=0, dark_ml=0)
 
-    def add_stock(self, other: t.List[int], qty: int):
-        self.red_ml=self.red_ml + (other[0] * qty)
-        self.green_ml=self.green_ml + (other[1] * qty)
-        self.blue_ml=self.blue_ml + (other[2] * qty)
-        self.dark_ml=self.dark_ml + (other[3] * qty)
+    def add_stock(self, other: t.List[int], ml_per_barrel: int, qty: int):
+        self.red_ml=self.red_ml + (other[0] * qty * ml_per_barrel)
+        self.green_ml=self.green_ml + (other[1] * qty * ml_per_barrel)
+        self.blue_ml=self.blue_ml + (other[2] * qty * ml_per_barrel)
+        self.dark_ml=self.dark_ml + (other[3] * qty * ml_per_barrel)
 
 
     def remove_stock(self, other: t.List[int], qty: int) -> t.Self:
-        self.red_ml=self.red_ml - (other[0] * qty)
+        self.red_ml=self.red_ml - (other[0] * qty )
         self.green_ml=self.green_ml - (other[1] * qty)
         self.blue_ml=self.blue_ml - (other[2] * qty)
         self.dark_ml=self.dark_ml - (other[3] * qty)
