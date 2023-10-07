@@ -52,6 +52,7 @@ async def log_request_info(request: Request):
             f"{request.method} request to {request.url.path}",
             extra={"headers": json.dumps(header_dict), 
                    "body": request_body,
+                   "path": request.url.path,
                    "path_params": json.dumps(request.path_params), 
                    "query_params": json.dumps(query_dict)}
         )
