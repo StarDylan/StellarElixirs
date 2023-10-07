@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from fastapi.testclient import TestClient
 from src.api import auth
 from src import database as db
+from src.constants import POTION_TYPES
 from src.models import BarrelDelta
 import logging
 
@@ -47,6 +49,72 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
     return "OK"
 
+    
+def buy_best_barrels(wholesale_catalog: list[Barrel], budget) -> list[dict]:
+    '''Returns the SKU and Qty of Barrels to Buy'''
+    barrels_to_buy = []
+    budget = 500
+    expected_value = 100 / 50 # in ml / $
+
+    potential_barrels = []
+
+    # Future: Take into account customer demand
+
+    # first Cull any Barrels where we lose money
+    for barrel in wholesale_catalog:
+        barrel_value = barrel.ml_per_barrel / barrel.price 
+        if barrel_value >= expected_value:
+            potential_barrels.append(barrel)
+        
+    
+
+    while budget > 0 and len(potential_barrels) > 0:
+        for potion_type in POTION_TYPES:
+
+            best_value = -1
+            best_idx = None
+
+            for (idx, barrel) in enumerate(potential_barrels):
+                if potion_type != barrel.potion_type:
+                    continue
+
+                barrel_value = barrel.ml_per_barrel / barrel.price 
+                
+                if barrel_value > best_value:
+                    best_idx = idx
+                    best_value = barrel_value
+
+            
+            if best_idx is None:
+                continue
+
+            # Now we have best barrel of a certain typ
+            best_barrel = potential_barrels.pop(best_idx)
+
+            if best_barrel.price <= budget:
+                existing_barrel = [x for x in barrels_to_buy 
+                                   if x["sku"] == best_barrel.sku]
+
+                if len(existing_barrel) > 0:
+                    existing_barrel[0]["quantity"] += 1
+                else:
+                    barrels_to_buy.append(
+                        {
+                            "sku": best_barrel.sku,
+                            "quantity": 1
+                        }
+                    )
+
+                budget -= best_barrel.price
+
+                best_barrel.quantity -= 1
+                
+                if best_barrel.quantity > 0:
+                    potential_barrels.append(best_barrel)
+    
+    return barrels_to_buy
+    
+
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
@@ -57,53 +125,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         "gold": gold
     })
 
-    
-    def best_value(barrels: list[Barrel], potion_type: list[int]) -> (str | None, int | None):
-        """Returns SKU and Quantity for best value"""
-        best = None
-        best_value = 0
-
-        for barrel in barrels:
-            if potion_type != barrel.potion_type:
-                continue
-            barrel_value = barrel.price / barrel.ml_per_barrel
-            if barrel_value > best_value:
-                best = barrel
-                best_value = barrel_value
+    barrels_to_buy = buy_best_barrels(wholesale_catalog)
         
-        if best == None:
-            return (None, None)
-        
-        return (best.sku, best.quantity)
+    if len(barrels_to_buy) == 0:
+        logger.warning("We don't have enough money, can't buy anything")
 
-
-    if gold >= 100 and gold < 300:
-        logger.info("Buying SMALL_RED_BARREL")
-        return [
-            {
-                "sku": "SMALL_RED_BARREL",
-                "quantity": 1,
-            },
-        ]
-
-    if gold >= 300:
-        logger.info("Buying red, green, blue barrels")
-        return [
-            {
-                "sku": "SMALL_RED_BARREL",
-                "quantity": 1,
-            },
-            {
-                "sku": "SMALL_GREEN_BARREL",
-                "quantity": 1,
-            },
-            {
-                "sku": "SMALL_BLUE_BARREL",
-                "quantity": 1,
-            },
-        ]
-    
-        
-    else:
-        logger.info("We don't have enough money, can't buy anything")
-        return []
+    return barrels_to_buy
