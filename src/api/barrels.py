@@ -57,6 +57,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         "gold": gold
     })
 
+    
+    def best_value(barrels: list[Barrel], potion_type: list[int]) -> (str | None, int | None):
+        """Returns SKU and Quantity for best value"""
+        best = None
+        best_value = 0
+
+        for barrel in barrels:
+            if potion_type != barrel.potion_type:
+                continue
+            barrel_value = barrel.price / barrel.ml_per_barrel
+            if barrel_value > best_value:
+                best = barrel
+                best_value = barrel_value
+        
+        if best == None:
+            return (None, None)
+        
+        return (best.sku, best.quantity)
+
+
     if gold >= 100 and gold < 300:
         logger.info("Buying SMALL_RED_BARREL")
         return [
