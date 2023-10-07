@@ -83,6 +83,22 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             },
         ]
     
+    if gold >= 3000:
+        logger.info("Buying lots of red, green, blue barrels")
+        return [
+            {
+                "sku": "SMALL_RED_BARREL",
+                "quantity": 3,
+            },
+            {
+                "sku": "SMALL_GREEN_BARREL",
+                "quantity": 3,
+            },
+            {
+                "sku": "SMALL_BLUE_BARREL",
+                "quantity": 3,
+            },
+        ]
         
     else:
         logger.info("We don't have enough money, can't buy anything")
