@@ -195,12 +195,13 @@ def get_potions() -> t.List[PotionEntry]:
     """Return a list of all potions in the inventory"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT id, red, green, blue, dark, quantity, sku, price \
+            sqlalchemy.text("SELECT id, red, green, blue, dark, quantity,desired_qty, sku, price \
                                 FROM potion_inventory")
         ).all()
         
         return [PotionEntry.from_db(row.id, row.red, row.green, row.blue, row.dark, 
-                                    row.quantity, row.sku, row.price) for row in result]
+                                    row.quantity,row.desired_qty, row.sku, row.price) 
+                                    for row in result]
     
 def reset():
     """Reset the game state. 

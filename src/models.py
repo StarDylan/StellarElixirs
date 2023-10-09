@@ -1,5 +1,6 @@
 import typing as t
 from dataclasses import dataclass
+from typing_extensions import SupportsIndex
 
 class PotionType(t.NamedTuple):
     red: int
@@ -13,16 +14,23 @@ class PotionType(t.NamedTuple):
     def from_array(array: t.List[int]) -> t.Self:
         return PotionType(red=array[0], green=array[1], blue=array[2], dark=array[3])
 
+    def __mul__(self, __value: int) -> t.Self:
+        return PotionType(red=self.red * __value, 
+                          green=self.green * __value, 
+                          blue=self.blue * __value, 
+                          dark=self.dark * __value)
+
 class PotionEntry(t.NamedTuple):
     id: int
     potion_type: PotionType
     quantity: int
+    desired_qty: int
     sku: str
     price: int
 
-    def from_db(id, red, green, blue, dark, quantity, sku, price):
+    def from_db(id, red, green, blue, dark, quantity,desired_qty, sku, price):
         potion_type = PotionType(red, green, blue, dark)
-        return PotionEntry(id, potion_type, quantity, sku, price)
+        return PotionEntry(id, potion_type, quantity,desired_qty, sku, price)
 
 
 class CartEntry(t.NamedTuple):
