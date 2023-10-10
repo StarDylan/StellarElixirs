@@ -10,10 +10,10 @@ class PotionType(t.NamedTuple):
     def to_array(self) -> t.List[int]:
         return [self.red, self.green, self.blue, self.dark]
     
-    def from_array(array: t.List[int]) -> t.Self:
+    def from_array(array: t.List[int]):
         return PotionType(red=array[0], green=array[1], blue=array[2], dark=array[3])
 
-    def __mul__(self, __value: int) -> t.Self:
+    def __mul__(self, __value: int):
         return PotionType(red=self.red * __value, 
                           green=self.green * __value, 
                           blue=self.blue * __value, 
@@ -52,7 +52,7 @@ class BarrelDelta():
     blue_ml: int
     dark_ml: int
 
-    def init_zero() -> t.Self:
+    def init_zero():
         return BarrelDelta(red_ml=0, green_ml=0, blue_ml=0, dark_ml=0)
 
     def add_stock(self, other: t.List[int], ml_per_barrel: int, qty: int):
