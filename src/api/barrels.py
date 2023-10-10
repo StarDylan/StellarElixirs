@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
+from fastapi.testclient import TestClient
 from src.api import auth
 from src import database as db
 from src.models import BarrelDelta
@@ -164,8 +165,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     budget -= price_to_spend
 
     
-
-
-
+    if len(barrels_to_buy) == 0:
+        logger.warning("Not buying any barrels")
 
     return barrels_to_buy
