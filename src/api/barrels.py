@@ -88,13 +88,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         barrel_ml_required = potion.potion_type * (potion.desired_qty - potion.quantity)
 
         
-        # If we have less than 10% of the desired qty, get 10% of the desired \
-        # qty at any price 
+        # If we have less than 10% of the desired qty, try to buy more but not below
+        # What we can sell them at (50g per 100ml (2))
         # Must be sorted!
         balking_ratio_and_amount = [
             (15, 1 * potion.desired_qty),
             (8, 0.4 * potion.desired_qty),
-            (0, 0 * potion.desired_qty)
+            (2, 0 * potion.desired_qty)
             ]
         
         balking_ratio = None        
