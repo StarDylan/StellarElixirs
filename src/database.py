@@ -196,7 +196,8 @@ def get_potions() -> t.List[PotionEntry]:
     """Return a list of all potions in the inventory"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT id, red, green, blue, dark, quantity,desired_qty, sku, price \
+            sqlalchemy.text("SELECT id, red, green, blue, dark, \
+                            quantity, desired_qty, sku, price \
                                 FROM potion_inventory")
         ).all()
         
