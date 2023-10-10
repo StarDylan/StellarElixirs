@@ -8,5 +8,6 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./src /code/src
 
-# 
+EXPOSE 80
+
 CMD ["uvicorn", "src.api.server:app", "--proxy-headers", "--host", "0.0.0.0", "--port", "80"]
