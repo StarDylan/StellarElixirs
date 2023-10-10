@@ -58,14 +58,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     barrels_to_buy = []
 
-    budget = gold * 0.5
+    starting_budget = gold * 0.5
+
+    budget = starting_budget
 
     excess = BarrelDelta.init_zero()
 
-    logger.info("Starting Barrel Planning", extra={
-        "gold": gold,
-        "budget": budget
-    })
+    
 
     while budget > 0 and len(potions) > 0:
         # Find the most difference between desired_qty and current_qty
@@ -89,8 +88,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         potion = most_difference_potion
         # Determine how much ml we need
         barrel_ml_required = potion.potion_type * (potion.desired_qty - potion.quantity)
-        logger.info(potion)
-        logger.info(f"barrel_ml_required: {barrel_ml_required.to_array()}")
 
         
         # If we have less than 10% of the desired qty, get 10% of the desired \
@@ -98,8 +95,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         # Must be sorted!
         balking_ratio_and_amount = [
             (15, 1 * potion.desired_qty),
-            (8, 0.5 * potion.desired_qty),
-            (0, 0.1 * potion.desired_qty)
+            (8, 0.4 * potion.desired_qty),
+            (0, 0 * potion.desired_qty)
             ]
         
         balking_ratio = None        
@@ -116,7 +113,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     type_to_remove = [0,0,0,0]
                     type_to_remove[potion_type] = 1
                     excess.remove_stock(type_to_remove, barrel_ml_required.to_array()[potion_type]) # noqa: E501
-                    logger.info("Already have enough excess to cover this potion")
                     continue
 
                 # Find Best Barrel for the ml we require
@@ -135,11 +131,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
                 # Determine how many barrels we need
                 barrels_required = max(1, math.ceil(barrel_ml_required.to_array()[potion_type] / best_barrel.ml_per_barrel))  # noqa: E501
-                logger.info(f"barrels_required: {barrels_required}")
-                
                
                 if best_barrel_ratio < balking_ratio:
-                    logger.info(f"Balking at price\nBarrel Ratio: {best_barrel_ratio}\nBalking Ratio: {balking_ratio}") # noqa: E501
                     continue
 
                 # Determine how much we can spend and how many barrels we can buy
@@ -161,19 +154,35 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     excess.remove_stock(type_to_add, barrel_ml_required[potion_type]) # noqa: E501
                     excess.zero_if_negative() # In case didn't buy enough to meet required amount of potion quantity # noqa: E501
 
-                    print(f"Excess: {excess.to_array()}")
-
-                    barrels_to_buy.append({
-                        "sku": best_barrel.sku,
-                        "quantity": barrels_to_buy_qty,
-                    })
+                    # Update the barrels to buy if sku already in list
+                    for barrel in barrels_to_buy:
+                        if barrel["sku"] == best_barrel.sku:
+                            barrel["quantity"] += barrels_to_buy_qty
+                            break
+                    else:
+                        barrels_to_buy.append({
+                            "sku": best_barrel.sku,
+                            "quantity": barrels_to_buy_qty,
+                        })
 
                     budget -= price_to_spend
-
-                    print(f"Buying {barrels_to_buy_qty} of {best_barrel.sku} for {price_to_spend} gold")  # noqa: E501
-
     
     if len(barrels_to_buy) == 0:
         logger.warning("Not buying any barrels")
+
+    # Calculate total price
+    total_price = 0
+    for barrel in barrels_to_buy:
+        for catalog_barrel in wholesale_catalog:
+            if catalog_barrel.sku == barrel["sku"]:
+                total_price += catalog_barrel.price * barrel["quantity"]
+                break
+
+    logger.info("Finished Barrel Planning", extra={
+        "gold": gold,
+        "budget": starting_budget,
+        "gold_paid": total_price,
+        "buying_barrels": barrels_to_buy,
+    })
 
     return barrels_to_buy
