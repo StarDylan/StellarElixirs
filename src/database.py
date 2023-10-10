@@ -153,42 +153,45 @@ def add_potions_by_id(potion_id: int, quantity: int) -> PotionEntry:
                 sqlalchemy.text(f"UPDATE potion_inventory \
                                 SET quantity = quantity + {quantity} \
                                 WHERE id={potion_id} \
-                                RETURNING id, red, green, blue, dark, quantity, sku, price"  # noqa: E501
+                                RETURNING id, red, green, blue, dark, \
+                                quantity, desired_qty, sku, price"
                                 )
             ).first()
 
             return PotionEntry.from_db(results.id, results.red, results.green, 
-                                       results.blue, results.dark, results.quantity, 
-                                       results.sku, results.price)
+                                       results.blue, results.dark, results.quantity,
+                                       results.desired_qty, results.sku, results.price)
 
 
 def get_potion_by_sku(sku: str) -> PotionEntry | None:
     """Return the potion id with the specified sku"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text(f"SELECT id, red, green, blue, dark, quantity, sku, price \
-                                FROM potion_inventory \
-                                WHERE sku = \'{sku}\'")
+            sqlalchemy.text(f"SELECT id, red, green, blue, dark, \
+                            quantity, sku, price, desired_qty \
+                            FROM potion_inventory \
+                            WHERE sku = \'{sku}\'")
         ).first()
         if result is None:
             return None
         return PotionEntry.from_db(result.id, result.red, result.green, 
                                     result.blue, result.dark, result.quantity, 
-                                    result.sku, result.price)
+                                    result.desired_qty, result.sku, result.price)
     
 def get_potion_by_id(id: int) -> PotionEntry | None:
     """Return the potion with the specified id"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text(f"SELECT id, red, green, blue, dark, quantity, sku, price \
-                                FROM potion_inventory \
-                                WHERE id = {id}")
+            sqlalchemy.text(f"SELECT id, red, green, blue, dark, \
+                            desired_qty, quantity, sku, price \
+                            FROM potion_inventory \
+                            WHERE id = {id}")
         ).first()
         if result is None:
             return None
         return PotionEntry.from_db(result.id, result.red, result.green, 
-                                    result.blue, result.dark, result.quantity, 
-                                    result.sku, result.price)
+                                    result.blue, result.dark, result.quantity,
+                                    result.desired_qty, result.sku, result.price)
     
     
 
