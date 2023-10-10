@@ -1,6 +1,5 @@
 import typing as t
 from dataclasses import dataclass
-from typing_extensions import SupportsIndex
 
 class PotionType(t.NamedTuple):
     red: int

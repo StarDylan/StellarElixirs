@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from fastapi.testclient import TestClient
 from src.api import auth
 from src import database as db
 from src.models import BarrelDelta
@@ -54,17 +53,19 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     gold = db.get_gold()
-    logger.info("Starting Barrel Planning", extra={
-        "gold": gold
-    })
+    
     potions = db.get_potions()
 
     barrels_to_buy = []
 
-    budget = gold * 5
+    budget = gold * 0.5
 
     excess = BarrelDelta.init_zero()
-    
+
+    logger.info("Starting Barrel Planning", extra={
+        "gold": gold,
+        "budget": budget
+    })
 
     while budget > 0 and len(potions) > 0:
         # Find the most difference between desired_qty and current_qty
@@ -92,7 +93,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         logger.info(f"barrel_ml_required: {barrel_ml_required.to_array()}")
 
         
-        # If we have less than 10% of the desired qty, get 10% of the desired qty at any price
+        # If we have less than 10% of the desired qty, get 10% of the desired \
+        # qty at any price 
         # Must be sorted!
         balking_ratio_and_amount = [
             (15, 1 * potion.desired_qty),
@@ -101,19 +103,19 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             ]
         
         balking_ratio = None        
-        for balk_ratio, balk_amount in balking_ratio_and_amount:
+        for balk_ratio_temp, balk_amount in balking_ratio_and_amount:
             if potion.quantity < balk_amount:
-                balking_ratio = balk_ratio
-                break
+                balking_ratio = balk_ratio_temp
+                
 
 
         for potion_type in range(0,4):
             if barrel_ml_required.to_array()[potion_type] > 0:
                 
-                if barrel_ml_required.to_array()[potion_type] <= excess.to_array()[potion_type]:
+                if barrel_ml_required.to_array()[potion_type] <= excess.to_array()[potion_type]: # noqa: E501
                     type_to_remove = [0,0,0,0]
                     type_to_remove[potion_type] = 1
-                    excess.remove_stock(type_to_remove, barrel_ml_required.to_array()[potion_type])
+                    excess.remove_stock(type_to_remove, barrel_ml_required.to_array()[potion_type]) # noqa: E501
                     logger.info("Already have enough excess to cover this potion")
                     continue
 
@@ -136,26 +138,30 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 logger.info(f"barrels_required: {barrels_required}")
                 
                
-                if best_barrel_ratio < balk_ratio:
-                    break
+                if best_barrel_ratio < balking_ratio:
+                    logger.info(f"Balking at price\nBarrel Ratio: {best_barrel_ratio}\nBalking Ratio: {balking_ratio}") # noqa: E501
+                    continue
 
                 # Determine how much we can spend and how many barrels we can buy
                 price_to_spend = min(barrels_required * best_barrel.price, budget)
                 barrels_to_buy_qty = min(price_to_spend // best_barrel.price, best_barrel.quantity)  # noqa: E501
-                logger.info(f"barrels_to_buy_qty: {barrels_to_buy_qty}")
 
                 if barrels_to_buy_qty > 0:
                     # Update the catalog
                     best_barrel.quantity -= barrels_to_buy_qty
+                    if best_barrel.quantity <= 0:
+                        wholesale_catalog.remove(best_barrel)
 
 
                     type_to_add = [0,0,0,0]
                     type_to_add[potion_type] = 1
 
                     # Keep track of any excess
-                    excess.add_stock(type_to_add, best_barrel.ml_per_barrel, barrels_to_buy_qty)
-                    excess.remove_stock(type_to_add, 100 * (potion.desired_qty - potion.quantity))
-                    excess.zero_if_negative() # In case didn't buy enough to meet required amount of potion quantity
+                    excess.add_stock(type_to_add, best_barrel.ml_per_barrel, barrels_to_buy_qty)  # noqa: E501
+                    excess.remove_stock(type_to_add, barrel_ml_required[potion_type]) # noqa: E501
+                    excess.zero_if_negative() # In case didn't buy enough to meet required amount of potion quantity # noqa: E501
+
+                    print(f"Excess: {excess.to_array()}")
 
                     barrels_to_buy.append({
                         "sku": best_barrel.sku,
@@ -163,6 +169,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                     })
 
                     budget -= price_to_spend
+
+                    print(f"Buying {barrels_to_buy_qty} of {best_barrel.sku} for {price_to_spend} gold")  # noqa: E501
 
     
     if len(barrels_to_buy) == 0:
