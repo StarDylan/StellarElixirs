@@ -6,6 +6,8 @@ import json
 from asgi_correlation_id import CorrelationIdFilter, CorrelationIdMiddleware
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+import sys
+
 
 class StellarElixirId(logging.Filter):
     def __init__(self):
@@ -52,12 +54,16 @@ async def log_request_info(request: Request):
             f"{request.method} request to {request.url.path}",
             extra={"headers": json.dumps(header_dict), 
                    "body": request_body,
+                   "path": request.url.path,
                    "path_params": json.dumps(request.path_params), 
                    "query_params": json.dumps(query_dict)}
         )
 
 
 def init_logger(app: FastAPI):
+    if "pytest" in sys.modules:
+        return
+    
     graylog_url = os.environ.get("GRAYLOG_URL")
     graylog_port = os.environ.get("GRAYLOG_PORT")
     
