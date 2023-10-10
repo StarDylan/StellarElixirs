@@ -44,6 +44,9 @@ class BarrelStock(t.NamedTuple):
 
     def all_ml(self) -> int:
         return self.red_ml + self.green_ml + self.blue_ml + self.dark_ml
+    
+    def to_array(self) -> t.List[int]:
+        return [self.red_ml, self.green_ml, self.blue_ml, self.dark_ml]
 
 @dataclass
 class BarrelDelta():

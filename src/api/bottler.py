@@ -55,58 +55,70 @@ def get_bottle_plan():
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
 
-    barrel_stock = db.get_barrel_stock()
+    barrel_stock = BarrelDelta.init_zero()
+    barrel_stock.add_stock(db.get_barrel_stock().to_array(), 1, 1)
 
-    
+    starting_stock = barrel_stock.to_array()
 
-    plan = []
 
-    red_quantity = barrel_stock.red_ml // 100
-    green_quantity = barrel_stock.green_ml // 100
-    blue_quantity = barrel_stock.blue_ml // 100
+    potions = db.get_potions()
 
-    if barrel_stock.red_ml >= 100:
-        plan.append(
+    bottle_plan = []
+
+    # Get the potion with the least ratio of stock 
+    while len(potions) > 0 and (barrel_stock.red_ml >= 100 or barrel_stock.green_ml >= 100 
+                                or barrel_stock.blue_ml >= 100 or barrel_stock.dark_ml >= 100):
+        least_ratio = None
+        least_ratio_potion = None
+        for potion in potions:
+            ratio = potion.quantity / potion.desired_qty
+
+            if least_ratio is None or ratio < least_ratio:
+                least_ratio = ratio
+                least_ratio_potion = potion
+        
+
+        potions.remove(least_ratio_potion)
+
+        # Determine how much we can bottle
+
+        potions_want_to_make = least_ratio_potion.desired_qty - least_ratio_potion.quantity
+
+        potions_can_make = potions_want_to_make
+        for color_required, color_stock in zip(least_ratio_potion.potion_type.to_array(), barrel_stock.to_array()):
+            if color_required == 0:
+                continue
+            potions_can_make = min(potions_can_make, color_stock // color_required)
+
+
+        if potions_can_make == 0:
+            continue
+        
+        bottle_plan.append(
                 {
-                    "potion_type": [100, 0, 0, 0],
-                    "quantity": red_quantity,
+                    "potion_type": least_ratio_potion.potion_type.to_array(),
+                    "quantity": potions_can_make,
                 }
         )
-    if barrel_stock.green_ml >= 100:
-        plan.append(
-                {
-                    "potion_type": [0, 100, 0, 0],
-                    "quantity": green_quantity,
-                }
-        )
 
-    if barrel_stock.blue_ml >= 100:
-        plan.append(
-                {
-                    "potion_type": [0, 0, 100, 0],
-                    "quantity": blue_quantity,
-                }
-        )
-    
-    if len(plan) == 0:
-        logger.info("Not enough barrel stock to bottle", extra={
-            "ml_red": barrel_stock.red_ml,
-            "ml_green": barrel_stock.green_ml,
-            "ml_blue": barrel_stock.blue_ml,
-            "ml_dark": barrel_stock.dark_ml,
+        barrel_stock.remove_stock(least_ratio_potion.potion_type.to_array(), potions_can_make)
+            
+
+    if len(bottle_plan) == 0:
+        logger.info("Not bottling", extra={
+            "ml_red": starting_stock[0],
+            "ml_green": starting_stock[1],
+            "ml_blue": starting_stock[2],
+            "ml_dark": starting_stock[3],
         })
     else:
-
-        total_potions = red_quantity + green_quantity + blue_quantity
-        logger.info(f"Planning Bottles, Bottling {total_potions} potions", extra={
-            "ml_red": barrel_stock.red_ml,
-            "ml_green": barrel_stock.green_ml,
-            "ml_blue": barrel_stock.blue_ml,
-            "ml_dark": barrel_stock.dark_ml,
-            "bottling_red_potions": red_quantity,
-            "bottling_green_potions": green_quantity,
-            "bottling_blue_potions": blue_quantity
+        logger.info(f"Planned Bottles", extra={
+            "ml_red": starting_stock[0],
+            "ml_green": starting_stock[1],
+            "ml_blue": starting_stock[2],
+            "ml_dark": starting_stock[3],
+            "bottle_plan": bottle_plan
         })
 
     
-    return plan
+    return bottle_plan
