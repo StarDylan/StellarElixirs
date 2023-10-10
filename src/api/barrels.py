@@ -64,8 +64,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     excess = BarrelDelta.init_zero()
 
-    
-
     while budget > 0 and len(potions) > 0:
         # Find the most difference between desired_qty and current_qty
         most_difference_ratio = None

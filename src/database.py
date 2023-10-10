@@ -28,7 +28,8 @@ def set_item_in_cart(cart_id: int, potion_id: int, quantity: int):
         existing_quantity_or_none = connection.execute(
             sqlalchemy.text(f"SELECT quantity \
                                 FROM cart_contents \
-                                WHERE potion_id = {potion_id}")).first()
+                                WHERE potion_id = {potion_id} AND \
+                                cart_id = {cart_id}")).first()
         
         if existing_quantity_or_none is None:
 
