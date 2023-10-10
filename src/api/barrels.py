@@ -6,6 +6,7 @@ from src import database as db
 from src.constants import POTION_TYPES
 from src.models import BarrelDelta
 import logging
+import math
 
 logger = logging.getLogger("barrels")
 
@@ -49,85 +50,117 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
     return "OK"
 
-    
-def buy_best_barrels(wholesale_catalog: list[Barrel], budget) -> list[dict]:
-    '''Returns the SKU and Qty of Barrels to Buy'''
-    barrels_to_buy = []
-    budget = 500
-    expected_value = 100 / 50 # in ml / $
-
-    potential_barrels = []
-
-    # Future: Take into account customer demand
-
-    # first Cull any Barrels where we lose money
-    for barrel in wholesale_catalog:
-        barrel_value = barrel.ml_per_barrel / barrel.price 
-        if barrel_value >= expected_value:
-            potential_barrels.append(barrel)
-        
-    
-
-    while budget > 0 and len(potential_barrels) > 0:
-        for potion_type in POTION_TYPES:
-
-            best_value = -1
-            best_idx = None
-
-            for (idx, barrel) in enumerate(potential_barrels):
-                if potion_type != barrel.potion_type:
-                    continue
-
-                barrel_value = barrel.ml_per_barrel / barrel.price 
-                
-                if barrel_value > best_value:
-                    best_idx = idx
-                    best_value = barrel_value
-
-            
-            if best_idx is None:
-                continue
-
-            # Now we have best barrel of a certain typ
-            best_barrel = potential_barrels.pop(best_idx)
-
-            if best_barrel.price <= budget:
-                existing_barrel = [x for x in barrels_to_buy 
-                                   if x["sku"] == best_barrel.sku]
-
-                if len(existing_barrel) > 0:
-                    existing_barrel[0]["quantity"] += 1
-                else:
-                    barrels_to_buy.append(
-                        {
-                            "sku": best_barrel.sku,
-                            "quantity": 1
-                        }
-                    )
-
-                budget -= best_barrel.price
-
-                best_barrel.quantity -= 1
-                
-                if best_barrel.quantity > 0:
-                    potential_barrels.append(best_barrel)
-    
-    return barrels_to_buy
-    
-
 # Gets called once a day
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     gold = db.get_gold()
+    potions = db.get_potions()
+
+    barrels_to_buy = []
+
+    budget = gold * 5
+    
+
+    while budget > 0 and len(potions) > 0:
+        # Find the most difference between desired_qty and current_qty
+        most_difference_ratio = None
+        most_difference_potion = None
+        for potion in potions[:]:
+            ratio = potion.quantity / potion.desired_qty 
+            if ratio >= 1.0:
+                potions.remove(potion) 
+                continue
+            if most_difference_potion is None or ratio > most_difference_ratio:
+                most_difference_potion = potion
+                most_difference_ratio = ratio
+        
+        if most_difference_potion is None:
+            break
+
+        # Remove from consideration
+        potions.remove(most_difference_potion)
+
+        potion = most_difference_potion
+        # Determine how much ml we need
+        barrel_ml_required = potion.potion_type * (potion.desired_qty - potion.quantity)
+        print(potion)
+        print(f"barrel_ml_required: {barrel_ml_required.to_array()}")
+
+        
+        # If we have less than 10% of the desired qty, get 10% of the desired qty at any price
+        # Must be sorted!
+        balking_ratio_and_amount = [
+            (15, 1 * potion.desired_qty),
+            (8, 0.5 * potion.desired_qty),
+            (0, 0.1 * potion.desired_qty)
+            ]
+        
+        balking_ratio = None        
+        for balk_ratio, balk_amount in balking_ratio_and_amount:
+            if potion.quantity < balk_amount:
+                balking_ratio = balk_ratio
+                break
+
+
+        for potion_type in range(0,4):
+            if barrel_ml_required.to_array()[potion_type] > 0:
+
+                # Find Best Barrel for the ml we require
+                best_barrel = None
+                best_barrel_ratio = None
+                for barrel in wholesale_catalog:
+                    if barrel.potion_type[potion_type] == 0:
+                        continue
+                    ratio = barrel.ml_per_barrel / barrel.price
+                    if best_barrel is None or ratio > best_barrel_ratio:
+                        best_barrel = barrel
+                        best_barrel_ratio = ratio
+                
+                if best_barrel is None:
+                    continue
+
+                # Determine how many barrels we need
+                barrels_required = max(1, math.ceil(barrel_ml_required.to_array()[potion_type] / best_barrel.ml_per_barrel))  # noqa: E501
+                print(f"barrels_required: {barrels_required}")
+                
+                chosen_balk_amount = 0
+                for balk_ratio, balk_amount in balking_ratio_and_amount:
+
+                    if best_barrel_ratio < balk_ratio:
+                        chosen_balk_amount = balk_amount
+                        break
+
+                # Determine how much we can spend and how many barrels we can buy
+                price_to_spend = min(barrels_required * best_barrel.price, budget)
+                barrels_to_buy_qty = min(price_to_spend // best_barrel.price, best_barrel.quantity)  # noqa: E501
+                print(f"barrels_to_buy_qty: {barrels_to_buy_qty}")
+
+                if barrels_to_buy_qty > 0:
+
+                   
+                    
+                    if best_barrel_ratio < balking_ratio:
+                        continue
+
+                    # Update the catalog
+                    best_barrel.quantity -= barrels_to_buy_qty
+
+                    barrels_to_buy.append({
+                        "sku": best_barrel.sku,
+                        "quantity": barrels_to_buy_qty,
+                    })
+
+                    budget -= price_to_spend
+
+    
+
 
     logger.info("Starting Barrel Planning", extra={
         "gold": gold
     })
-
-    barrels_to_buy = buy_best_barrels(wholesale_catalog)
         
     if len(barrels_to_buy) == 0:
-        logger.warning("We don't have enough money, can't buy anything")
+        logger.warning("Not buying any barrels")
 
     return barrels_to_buy
