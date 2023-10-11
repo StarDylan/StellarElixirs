@@ -77,15 +77,33 @@ def get_bottle_plan():
                 least_ratio = ratio
                 least_ratio_potion = potion
         
+        # TAKEN FROM BARREL
+
+        balking_ratio_and_amount = [
+            (15, 1 * potion.desired_qty),
+            (8, 0.3 * potion.desired_qty),
+            (2, 0.2 * potion.desired_qty)
+            ]
+        
+        balking_amount = None      
+        for balk_ratio_temp, balk_amount in balking_ratio_and_amount:
+            if least_ratio_potion.quantity < balk_amount:
+                balking_amount = balk_amount
+        
 
         potions.remove(least_ratio_potion)
 
         # Determine how much we can bottle
 
-        potions_want_to_make = least_ratio_potion.desired_qty - least_ratio_potion.quantity
+        potions_want_to_make = min(balking_amount, least_ratio_potion.desired_qty - least_ratio_potion.quantity)  # noqa: E501
+
+        print(f"balking amount: {balking_amount}")
+        print("potions_want_to_make", potions_want_to_make)
+        print("least_ratio_potion", least_ratio_potion)
+        print("Balking ratio and amount", balking_ratio_and_amount)
 
         potions_can_make = potions_want_to_make
-        for color_required, color_stock in zip(least_ratio_potion.potion_type.to_array(), barrel_stock.to_array()):
+        for color_required, color_stock in zip(least_ratio_potion.potion_type.to_array(), barrel_stock.to_array()):  # noqa: E501
             if color_required == 0:
                 continue
             potions_can_make = min(potions_can_make, color_stock // color_required)

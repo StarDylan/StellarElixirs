@@ -85,7 +85,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
         potion = most_difference_potion
         # Determine how much ml we need
-        barrel_ml_required = potion.potion_type * (potion.desired_qty - potion.quantity)
 
         
         # If we have less than 10% of the desired qty, try to buy more but not below
@@ -93,15 +92,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         # Must be sorted!
         balking_ratio_and_amount = [
             (15, 1 * potion.desired_qty),
-            (8, 0.4 * potion.desired_qty),
-            (2, 0 * potion.desired_qty)
+            (8, 0.3 * potion.desired_qty),
+            (2, 0.2 * potion.desired_qty)
             ]
         
-        balking_ratio = None        
+        balking_ratio = None  
+        balking_amount = None      
         for balk_ratio_temp, balk_amount in balking_ratio_and_amount:
             if potion.quantity < balk_amount:
                 balking_ratio = balk_ratio_temp
-                
+                balking_amount = balk_amount
+        
+        potions_required = min((potion.desired_qty - potion.quantity), balking_amount)
+        barrel_ml_required = potion.potion_type * potions_required
+            
 
 
         for potion_type in range(0,4):
