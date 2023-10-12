@@ -66,8 +66,10 @@ def get_bottle_plan():
     bottle_plan = []
 
     # Get the potion with the least ratio of stock 
-    while len(potions) > 0 and (barrel_stock.red_ml >= 100 or barrel_stock.green_ml >= 100 
-                                or barrel_stock.blue_ml >= 100 or barrel_stock.dark_ml >= 100):
+    while len(potions) > 0 and (barrel_stock.red_ml >= 100 
+                                or barrel_stock.green_ml >= 100 
+                                or barrel_stock.blue_ml >= 100 
+                                or barrel_stock.dark_ml >= 100):
         least_ratio = None
         least_ratio_potion = None
         for potion in potions:
@@ -115,11 +117,11 @@ def get_bottle_plan():
         bottle_plan.append(
                 {
                     "potion_type": least_ratio_potion.potion_type.to_array(),
-                    "quantity": potions_can_make,
+                    "quantity": int(potions_can_make),
                 }
         )
 
-        barrel_stock.remove_stock(least_ratio_potion.potion_type.to_array(), potions_can_make)
+        barrel_stock.remove_stock(least_ratio_potion.potion_type.to_array(), potions_can_make)  # noqa: E501
             
 
     if len(bottle_plan) == 0:
@@ -130,7 +132,7 @@ def get_bottle_plan():
             "ml_dark": starting_stock[3],
         })
     else:
-        logger.info(f"Planned Bottles", extra={
+        logger.info("Planned Bottles", extra={
             "ml_red": starting_stock[0],
             "ml_green": starting_stock[1],
             "ml_blue": starting_stock[2],
