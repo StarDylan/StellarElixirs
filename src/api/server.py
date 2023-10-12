@@ -6,6 +6,7 @@ from src.logger_init import init_logger, log_request_info
 import json
 import logging
 import dotenv
+import os
 
 description = """
 Shine Bright with Stellar Elixirs: Your Celestial Source for Magical Potions
@@ -23,7 +24,8 @@ app = FastAPI(
         "name": "Dylan Starink",
         "email": "dstarink@calpoly.edu",
     },
-    dependencies=[Depends(log_request_info)]
+    dependencies=[Depends(log_request_info)],
+    root_path=os.environ.get('ROOT_PATH')
 )
 
 logging.getLogger().setLevel(logging.INFO)
