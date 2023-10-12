@@ -1,6 +1,7 @@
 name: Push Prod Image
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - "main"
