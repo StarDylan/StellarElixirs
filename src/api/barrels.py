@@ -56,6 +56,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     
     potions = db.get_potions()
 
+    barrel_stock_delta = BarrelDelta.init_zero()
+    barrel_stock_delta.add_stock(db.get_barrel_stock().to_array(), 1, 1)
+
     barrels_to_buy = []
 
     starting_budget = gold * 0.5
@@ -140,6 +143,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 # Determine how much we can spend and how many barrels we can buy
                 price_to_spend = min(barrels_required * best_barrel.price, budget)
                 barrels_to_buy_qty = min(price_to_spend // best_barrel.price, best_barrel.quantity)  # noqa: E501
+                
+                # Determine if we already have stock
+                if barrel_stock_delta.to_array()[potion_type] >= best_barrel.ml_per_barrel * barrels_to_buy_qty:  # noqa: E501
+                    barrel_to_stock_type = [0,0,0,0]
+                    barrel_to_stock_type[potion_type] = 1
+                    barrel_stock_delta.remove_stock(barrel_to_stock_type, best_barrel.ml_per_barrel * barrels_to_buy_qty)  # noqa: E501
+                    continue
 
                 if barrels_to_buy_qty > 0:
                     # Update the catalog
