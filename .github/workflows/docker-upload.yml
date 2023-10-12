@@ -2,6 +2,11 @@ name: Push Prod Image
 
 on:
   workflow_dispatch:
+    inputs:
+      docker_push_tag:
+        description: 'Tag to push to Dockerhub'
+        required: true
+        type: string
   push:
     branches:
       - "main"
@@ -30,4 +35,4 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: ${{ secrets.DOCKERHUB_USERNAME }}/stellar-elixirs:latest
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/stellar-elixirs:${{ inputs.docker_push_tag || 'latest' }}
