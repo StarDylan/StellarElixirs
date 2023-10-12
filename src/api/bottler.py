@@ -66,6 +66,9 @@ def get_bottle_plan():
     bottle_plan = []
 
     total_potions = 0
+    for potion in potions:
+        total_potions += potion.quantity
+
 
     # Get the potion with the least ratio of stock 
     while len(potions) > 0 and (barrel_stock.red_ml >= 100 
@@ -119,6 +122,8 @@ def get_bottle_plan():
         potion_limit_number = max(300-total_potions, 0)
 
         potions_can_make = min(potion_limit_number, potions_can_make)
+
+        total_potions += potions_can_make
         
         if potions_can_make == 0:
             continue
