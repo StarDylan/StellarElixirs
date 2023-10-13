@@ -104,7 +104,7 @@ def get_bottle_plan():
 
         potions.remove(least_ratio_potion)
 
-        if balk_amount is None:
+        if balking_amount is None:
             continue # Don't need to bottle
 
         # Determine how much we can bottle
