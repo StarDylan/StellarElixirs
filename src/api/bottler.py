@@ -100,6 +100,9 @@ def get_bottle_plan():
 
         potions.remove(least_ratio_potion)
 
+        if balk_amount is None:
+            continue # Don't need to bottle
+
         # Determine how much we can bottle
 
         potions_want_to_make = min(balking_amount, least_ratio_potion.desired_qty - least_ratio_potion.quantity)  # noqa: E501
