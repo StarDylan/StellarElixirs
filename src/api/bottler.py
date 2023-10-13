@@ -80,6 +80,10 @@ def get_bottle_plan():
         for potion in potions:
             ratio = potion.quantity / potion.desired_qty
 
+            if ratio >= 1.0:
+                potions.remove(potion) 
+                continue
+
             if least_ratio is None or ratio < least_ratio:
                 least_ratio = ratio
                 least_ratio_potion = potion
