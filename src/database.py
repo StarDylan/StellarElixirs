@@ -67,100 +67,106 @@ def delete_cart(cart_id: int):
 def get_gold():
     """Return the current amount of gold in the global inventory"""
     with engine.begin() as connection:
-        result = connection.execute(
-            sqlalchemy.text("SELECT gold FROM global_inventory")
-        ).one()
-        return result[0]
+        gold = connection.execute(
+            sqlalchemy.text("SELECT SUM(gold)\
+                            FROM inventory_ledger")
+        ).scalar_one()
+
+        return int(gold)
     
-def add_gold(gold_to_add: int):
+def add_gold(gold_to_add: int, desc: str) -> int:
     """Add the specified amount of gold to the global inventory"""
     with engine.begin() as connection:
-        connection.execute(
-            sqlalchemy.text(f"UPDATE global_inventory SET gold=gold + {gold_to_add}")
-        )
+        id = connection.execute(
+            sqlalchemy.text("""INSERT INTO inventory_ledger
+                            (gold, description)
+                            VALUES (:gold, :description)
+                            RETURNING id"""),
+                            [{"gold": gold_to_add, "description": desc}]
+        ).scalar_one()
 
-def add_barrel_stock(barrel_delta: BarrelDelta):
-    """Add the specified amount of each color to the global inventory"""
+        return id
+
+def add_barrel_stock(barrel_delta: BarrelDelta, desc: str) -> int:
+    """Add the specified amount of each color to the global inventory
+    
+    Returns ledger line id"""
     with engine.begin() as connection:
-        connection.execute(
-           sqlalchemy.text( f"UPDATE global_inventory \
-                            SET num_red_ml = num_red_ml + {barrel_delta.red_ml}, \
-                                num_green_ml = num_green_ml + {barrel_delta.green_ml}, \
-                                num_blue_ml = num_blue_ml + {barrel_delta.blue_ml}, \
-                                num_dark_ml = num_dark_ml + {barrel_delta.dark_ml}")
-        )
+        id = connection.execute(
+            sqlalchemy.text("INSERT INTO inventory_ledger \
+                            (red_ml, green_ml, blue_ml, dark_ml, description) \
+                            VALUES (:red_ml, :green_ml, :blue_ml, :dark_ml, \
+                                :description)"),
+                            [{"red_ml": barrel_delta.red_ml, 
+                              "green_ml": barrel_delta.green_ml, 
+                              "blue_ml": barrel_delta.blue_ml, 
+                              "dark_ml": barrel_delta.dark_ml, 
+                              "description": desc}]
+        ).scalar_one()
+
+    return id
 
 def get_barrel_stock() -> BarrelStock:
     """Return the current amount of each color in the global inventory"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT num_red_ml, num_green_ml, num_blue_ml, num_dark_ml \
-                                FROM global_inventory")
+            sqlalchemy.text("SELECT SUM(red_ml) as red, \
+                            SUM(green_ml) as green, \
+                            SUM(blue_ml) as blue, \
+                            SUM(dark_ml) as dark \
+                            FROM inventory_ledger")
         ).one()
-        return BarrelStock(result.num_red_ml, result.num_green_ml, 
-                           result.num_blue_ml, result.num_dark_ml)
+        return BarrelStock(int(result.red), int(result.green), 
+                           int(result.blue), int(result.dark))
 
     
-def add_potions_by_type(potion_type: PotionType, quantity: int):
+def add_potion_by_type(potion_type: PotionType, quantity: int, desc: str):
     """Add the specified amount of potions of specific type to the inventory"""
-
-    price = 50
-
-    if potion_type.red + potion_type.green + potion_type.blue + potion_type.dark != 100:
-        raise ValueError(f"Potion components must add up to 100 \
-                            \n(red = {potion_type.red}, \
-                            green = {potion_type.green}, \
-                            blue = {potion_type.blue}, \
-                            dark = {potion_type.dark}) \
-                            @ quantity = {quantity}")
 
     with engine.begin() as connection:
         
-        existing_potion_amount_or_none = connection.execute(
-            sqlalchemy.text(f"SELECT quantity \
-                                FROM potion_inventory \
-                                WHERE red = {potion_type.red} \
-                                AND green = {potion_type.green} \
-                                AND blue = {potion_type.blue} \
-                                AND dark = {potion_type.dark}")).first()
+        ledger_id = connection.execute(
+            sqlalchemy.text(
+                """INSERT INTO
+                    potion_ledger (qty_change, potion_id, description)
+                    (
+                        SELECT :qty_change, potion_inventory.id, :desc
+                        FROM potion_inventory
+                        WHERE potion_inventory.red=:red AND
+                        potion_inventory.green=:green AND
+                        potion_inventory.blue=:blue AND 
+                        potion_inventory.dark=:dark
+                    )
+                    RETURNING id"""),
+            [{
+                "qty_change": quantity,
+                "red": potion_type.red,
+                "green": potion_type.green,
+                "blue": potion_type.blue,
+                "dark": potion_type.dark,
+                "desc": desc
+            }]).scalar_one()
+    return ledger_id
+        
 
-        if existing_potion_amount_or_none is None:
-
-            sku = f"R{potion_type.red}_G{potion_type.green}" + \
-                f"_B{potion_type.blue}_D{potion_type.dark}"
-            
-            connection.execute(
-                sqlalchemy.text(f"INSERT INTO potion_inventory \
-                                (sku, red, green, blue, dark, quantity, price) \
-                                VALUES (\'{sku}\', {potion_type.red}, {potion_type.green}, {potion_type.blue}, {potion_type.dark}, {quantity}, {price})")  # noqa: E501
-            )
-        else:
-            connection.execute(
-                sqlalchemy.text(f"UPDATE potion_inventory \
-                                SET quantity = quantity + {quantity} \
-                                WHERE red={potion_type.red} \
-                                AND green={potion_type.green} \
-                                AND blue={potion_type.blue} \
-                                AND dark={potion_type.dark}"
-                                )
-            )
-
-def add_potions_by_id(potion_id: int, quantity: int) -> PotionEntry:
+def add_potions_by_id(potion_id: int, quantity: int, desc: str) -> PotionEntry:
     """Add the specified amount of potions to the inventory.
     Potion must already exist."""
     with engine.begin() as connection:
-            results = connection.execute(
-                sqlalchemy.text(f"UPDATE potion_inventory \
-                                SET quantity = quantity + {quantity} \
-                                WHERE id={potion_id} \
-                                RETURNING id, red, green, blue, dark, \
-                                quantity, desired_qty, sku, price"
-                                )
-            ).first()
+            id_added = connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO potion_ledger (qty_change, potion_id, description)
+                    VALUES (:qty_change, :potion_id, :desc)
+                    RETURNING id
+                    """),
+                [{
+                    "qty_change": quantity,
+                    "potion_id": potion_id,
+                    "desc": desc
+                }]
+            ).scalar_one()
 
-            return PotionEntry.from_db(results.id, results.red, results.green, 
-                                       results.blue, results.dark, results.quantity,
-                                       results.desired_qty, results.sku, results.price)
+            return id_added
 
 
 def get_potion_by_sku(sku: str) -> PotionEntry | None:
