@@ -34,7 +34,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
 
     db.add_barrel_stock(barrel_delta)
 
-    logger.info("Recieved Bottles", extra={
+    logger.info("Received Bottles", extra={
         "ml_used_red": -barrel_delta.red_ml,
         "ml_used_green": -barrel_delta.green_ml,
         "ml_used_blue": -barrel_delta.blue_ml,

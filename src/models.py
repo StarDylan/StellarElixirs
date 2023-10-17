@@ -21,10 +21,11 @@ class PotionEntry(t.NamedTuple):
     potion_type: PotionType
     quantity: int
     sku: str
+    price: int
 
-    def from_db(id, red, green, blue, dark, quantity, sku):
+    def from_db(id, red, green, blue, dark, quantity, sku, price):
         potion_type = PotionType(id, red, green, blue, dark)
-        return PotionEntry(potion_type, quantity, sku)
+        return PotionEntry(potion_type, quantity, sku, price)
 
 
 class CartEntry(t.NamedTuple):

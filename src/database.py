@@ -201,6 +201,7 @@ def get_potions() -> t.List[PotionEntry]:
             sqlalchemy.text("""
                 SELECT
                     potion_inventory.id,
+                    potion_inventory.price,
                     red,
                     green,
                     blue,
@@ -215,11 +216,12 @@ def get_potions() -> t.List[PotionEntry]:
                     potion_inventory.red,
                     potion_inventory.green,
                     potion_inventory.blue,
-                    potion_inventory.dark""")
+                    potion_inventory.dark,
+                    potion_inventory.price""")
         ).all()
         
         return [PotionEntry.from_db(row.id, row.red, row.green, row.blue, row.dark, 
-                                    int(row.qty), row.sku) 
+                                    int(row.qty), row.sku, row.price) 
                                     for row in result]
 
 def reset():
