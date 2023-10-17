@@ -19,10 +19,8 @@ def get_catalog():
     
     catalog = []
 
-    price = 50
-
     [db.PotionCatalogEntry(potion_id=potion.potion_type.id, sku=potion.sku,
-                           price=) for potion in potions_to_sell]
+                           price=potion.price) for potion in potions_to_sell]
 
     db.add_historical_potion_catalog_data()
     

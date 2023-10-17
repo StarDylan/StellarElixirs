@@ -2,7 +2,6 @@ import typing as t
 from dataclasses import dataclass
 
 class PotionType(t.NamedTuple):
-    id: int
     red: int
     green: int
     blue: int
@@ -23,8 +22,8 @@ class PotionEntry(t.NamedTuple):
     sku: str
     price: int
 
-    def from_db(id, red, green, blue, dark, quantity, sku, price):
-        potion_type = PotionType(id, red, green, blue, dark)
+    def from_db(red, green, blue, dark, quantity, sku, price):
+        potion_type = PotionType(red, green, blue, dark)
         return PotionEntry(potion_type, quantity, sku, price)
 
 
