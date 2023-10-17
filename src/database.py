@@ -241,8 +241,6 @@ def reset():
             [{"gold": STARTING_GOLD}]
         )
 
-# TODO: Add More Data Collection
-
 def add_historical_catalog_data(catalog: t.List[Barrel]):
     """Add the catalog data to the database"""
     with engine.begin() as connection:
