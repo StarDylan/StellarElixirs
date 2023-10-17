@@ -38,7 +38,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
     db.add_gold(-gold_paid)
     db.add_barrel_stock(barrel_delta)
 
-    logger.info(f"Recieved Barrels, paid {gold_paid} gold", extra={
+    logger.info(f"Received Barrels, paid {gold_paid} gold", extra={
         "ml_added_red": barrel_delta.red_ml,
         "ml_added_green": barrel_delta.green_ml,
         "ml_added_blue": barrel_delta.blue_ml,
