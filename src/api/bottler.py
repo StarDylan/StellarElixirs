@@ -97,12 +97,13 @@ def get_bottle_plan():
             ]
         
         balking_amount = None      
-        for balk_ratio_temp, balk_amount in balking_ratio_and_amount:
-            if least_ratio_potion.quantity < balk_amount:
-                balking_amount = balk_amount
-        
+        if least_ratio_potion:
+            for balk_ratio_temp, balk_amount in balking_ratio_and_amount:
+                if least_ratio_potion.quantity < balk_amount:
+                    balking_amount = balk_amount
+            
 
-        potions.remove(least_ratio_potion)
+            potions.remove(least_ratio_potion)
 
         if balking_amount is None:
             continue # Don't need to bottle
