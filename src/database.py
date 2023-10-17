@@ -250,10 +250,11 @@ def add_historical_catalog_data(catalog: t.List[Barrel]):
 
 class PotionCatalogEntry(t.NamedTuple):
     sku: str
-    potion_id: int
     price: int
     quantity: int
 
+
+# TODO: CONTINUE TO WORK ON ME
 def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry]):
     current_time = datetime.now(tz=timezone.utc)
     with engine.begin() as connection:
@@ -261,8 +262,11 @@ def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry]):
             connection.execute(
                 sqlalchemy.text("""
                     INSERT INTO potion_catalog_history
-                    (created_at, sku, potion_id, price, quantity)
-                    VALUES (:created_at, :sku, :potion_id, :price, :quantity)"""),
+                    (potion_id, price, quantity)
+                    
+              SELECT potion_inventory.id, 2, 5
+              FROM potion_inventory
+              WHERE potion_inventory.sku = 'RED'"""),
                     [{  "sku": entry.sku,
                         "potion_id": entry.potion_id,
                         "price": entry.price,

@@ -18,11 +18,7 @@ def get_catalog():
     potions_to_sell = db.get_potions()[:20]
     
     catalog = []
-
-    [db.PotionCatalogEntry(potion_id=potion.potion_type.id, sku=potion.sku,
-                           price=potion.price) for potion in potions_to_sell]
-
-    db.add_historical_potion_catalog_data()
+    historical_record = []
     
     for potion_entry in potions_to_sell:
         if potion_entry.quantity == 0:
@@ -35,10 +31,20 @@ def get_catalog():
             "price": potion_entry.price,
             "potion_type": potion_entry.potion_type.to_array(),
         })
+
+        historical_record.append(db.PotionCatalogEntry(
+            potion_entry.sku,
+            potion_entry.price,
+            potion_entry.quantity,
+        ))
+
     
     if len(catalog) == 0:
         logger.info("No potions in inventory to list in catalog")
         return []
+
+
+    db.add_historical_potion_catalog_data(historical_record)
     
     
     logger.info("Catalog with potions served", extra={
