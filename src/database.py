@@ -169,20 +169,21 @@ def add_potions_by_id(potion_id: int, quantity: int, desc: str) -> PotionEntry:
             return id_added
 
 
-def get_potion_by_sku(sku: str) -> PotionEntry | None:
+def get_potion_type_by_sku(sku: str) -> PotionType | None:
     """Return the potion id with the specified sku"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text(f"SELECT id, red, green, blue, dark, \
-                            quantity, sku, price, desired_qty \
-                            FROM potion_inventory \
-                            WHERE sku = \'{sku}\'")
+            sqlalchemy.text("""
+                SELECT id, red, green, blue, dark
+                FROM potion_inventory
+                WHERE sku = :sku""",
+                [{"sku": sku}])
         ).first()
+
         if result is None:
             return None
-        return PotionEntry.from_db(result.id, result.red, result.green, 
-                                    result.blue, result.dark, result.quantity, 
-                                    result.desired_qty, result.sku, result.price)
+        
+        return PotionType(result.id, result.red, result.green, result.blue, result.dark)
     
 def get_potion_by_id(id: int) -> PotionEntry | None:
     """Return the potion with the specified id"""
@@ -205,13 +206,27 @@ def get_potions() -> t.List[PotionEntry]:
     """Return a list of all potions in the inventory"""
     with engine.begin() as connection:
         result = connection.execute(
-            sqlalchemy.text("SELECT id, red, green, blue, dark, \
-                            quantity, desired_qty, sku, price \
-                                FROM potion_inventory")
+            sqlalchemy.text("""
+                SELECT
+                    potion_inventory.id,
+                    red,
+                    green,
+                    blue,
+                    dark,
+                    COALESCE( SUM(potion_ledger.qty_change), 0) AS qty
+                FROM
+                    potion_inventory
+                LEFT JOIN potion_ledger ON potion_ledger.potion_id = potion_inventory.id
+                GROUP BY
+                    potion_inventory.id,
+                    potion_inventory.red,
+                    potion_inventory.green,
+                    potion_inventory.blue,
+                    potion_inventory.dark""")
         ).all()
         
         return [PotionEntry.from_db(row.id, row.red, row.green, row.blue, row.dark, 
-                                    row.quantity,row.desired_qty, row.sku, row.price) 
+                                    int(row.qty)) 
                                     for row in result]
     
 def reset():

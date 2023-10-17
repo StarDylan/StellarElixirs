@@ -2,6 +2,7 @@ import typing as t
 from dataclasses import dataclass
 
 class PotionType(t.NamedTuple):
+    id: int
     red: int
     green: int
     blue: int
@@ -9,9 +10,6 @@ class PotionType(t.NamedTuple):
     
     def to_array(self) -> t.List[int]:
         return [self.red, self.green, self.blue, self.dark]
-    
-    def from_array(array: t.List[int]):
-        return PotionType(red=array[0], green=array[1], blue=array[2], dark=array[3])
 
     def __mul__(self, __value: int):
         return PotionType(red=self.red * __value, 
@@ -20,16 +18,12 @@ class PotionType(t.NamedTuple):
                           dark=self.dark * __value)
 
 class PotionEntry(t.NamedTuple):
-    id: int
     potion_type: PotionType
     quantity: int
-    desired_qty: int
-    sku: str
-    price: int
 
-    def from_db(id, red, green, blue, dark, quantity,desired_qty, sku, price):
-        potion_type = PotionType(red, green, blue, dark)
-        return PotionEntry(id, potion_type, quantity,desired_qty, sku, price)
+    def from_db(id, red, green, blue, dark, quantity):
+        potion_type = PotionType(id, red, green, blue, dark)
+        return PotionEntry(potion_type, quantity)
 
 
 class CartEntry(t.NamedTuple):
