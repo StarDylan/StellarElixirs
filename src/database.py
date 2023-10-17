@@ -1,9 +1,9 @@
+from datetime import datetime, timezone
 import os
 import sqlalchemy
 from sqlalchemy import create_engine
 import typing as t
 from src.api.barrels import Barrel
-
 from src.constants import STARTING_GOLD
 from src.models import BarrelDelta, BarrelStock, CartEntry, PotionEntry, PotionType
 
@@ -243,14 +243,18 @@ def reset():
 
 def add_historical_catalog_data(catalog: t.List[Barrel]):
     """Add the catalog data to the database"""
+    current_time = datetime.now(tz=timezone.utc)
     with engine.begin() as connection:
         for barrel in catalog:
             connection.execute(
                 sqlalchemy.text("""
                     INSERT INTO wholesale_catalog_history
-                    (sku, ml_per_barrel, red, green, blue, dark, price, quantity)
-                    VALUES (:sku, :ml_per_barrel, :red, :green, :blue, :dark, :price, :quantity)"""),
-                    [{  "sku": barrel.sku,
+                    (created_at, sku, ml_per_barrel, red, green, blue, dark, price, 
+                        quantity)
+                    VALUES (:created_at, :sku, :ml_per_barrel, :red, :green, :blue, 
+                        :dark, :price, :quantity)"""),
+                    [{  "created_at": current_time,
+                        "sku": barrel.sku,
                         "ml_per_barrel": barrel.ml_per_barrel,
                         "red": barrel.potion_type.red,
                         "green": barrel.potion_type.green,
@@ -258,4 +262,26 @@ def add_historical_catalog_data(catalog: t.List[Barrel]):
                         "dark": barrel.potion_type.dark,
                         "price": barrel.price,
                         "quantity": barrel.quantity}]
+            )
+
+class PotionCatalogEntry(t.NamedTuple):
+    sku: str
+    potion_id: int
+    price: int
+    quantity: int
+
+def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry]):
+    current_time = datetime.now(tz=timezone.utc)
+    with engine.begin() as connection:
+        for entry in catalog:
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO potion_catalog_history
+                    (created_at, sku, potion_id, price, quantity)
+                    VALUES (:created_at, :sku, :potion_id, :price, :quantity)"""),
+                    [{  "sku": entry.sku,
+                        "potion_id": entry.potion_id,
+                        "price": entry.price,
+                        "quantity": entry.quantity,
+                        "created_at": current_time}]
             )
