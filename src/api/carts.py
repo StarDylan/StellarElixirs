@@ -74,7 +74,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         potion_entry = db.add_potions_by_id(cart_entry.potion_id, -cart_entry.quantity, 
                                             f"Checkout for Cart #{cart_id}")
 
-        total_price += potion_entry.price * cart_entry.quantity
+        total_price += cart_entry.price * cart_entry.quantity
         total_potions += cart_entry.quantity
 
     # Add Gold
@@ -86,5 +86,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         "total_potions_bought": total_potions,
         "total_gold_paid": total_price
     })
+
+    db.add_cart_checkout(cart_id, cart_checkout.payment)
 
     return {"total_potions_bought": total_potions, "total_gold_paid": total_price}

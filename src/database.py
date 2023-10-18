@@ -30,9 +30,9 @@ def set_item_in_cart(cart_id: int, sku: int, quantity: int):
         connection.execute(
             sqlalchemy.text("""
                 INSERT INTO cart_contents
-                (cart_id, potion_id, quantity)
+                (cart_id, potion_id, price, quantity)
                         
-                SELECT :cart_id, potion_inventory.id, :price, :quantity
+                SELECT :cart_id, potion_inventory.id, potion_inventory.price, :quantity
                 FROM potion_inventory
                 WHERE potion_inventory.sku = :sku"""),
                 [{"cart_id": cart_id, "sku": sku, "quantity": quantity}]
@@ -43,7 +43,7 @@ def get_cart_contents(cart_id: int) -> t.List[CartEntry]:
     with engine.begin() as connection:
         result = connection.execute(
             sqlalchemy.text("""
-                SELECT a.potion_id, a.quantity, a.id
+                SELECT a.potion_id, a.quantity, a.id, a.price
                 FROM cart_contents a
                 INNER JOIN (
                     SELECT potion_id, MAX(id) id
@@ -55,7 +55,7 @@ def get_cart_contents(cart_id: int) -> t.List[CartEntry]:
         ).all()
 
         
-        return [CartEntry(row.id, row.potion_id, row.quantity) for row in result]
+        return [CartEntry(row.id, row.potion_id, row.quantity, row.price) for row in result]
 
 def get_gold():
     """Return the current amount of gold in the global inventory"""
@@ -90,7 +90,8 @@ def add_barrel_stock(barrel_delta: BarrelDelta, desc: str) -> int:
             sqlalchemy.text("""
                 INSERT INTO inventory_ledger
                 (red_ml, green_ml, blue_ml, dark_ml, description)
-                VALUES (:red_ml, :green_ml, :blue_ml, :dark_ml, :description)"""),
+                VALUES (:red_ml, :green_ml, :blue_ml, :dark_ml, :description)
+                RETURNING id"""),
                 [{"red_ml": barrel_delta.red_ml, 
                     "green_ml": barrel_delta.green_ml, 
                     "blue_ml": barrel_delta.blue_ml, 
@@ -191,8 +192,9 @@ def get_potions() -> t.List[PotionEntry]:
                     green,
                     blue,
                     dark,
-                    COALESCE( SUM(potion_ledger.qty_change), 0) AS qty,
-                    sku
+                    CAST(COALESCE( SUM(potion_ledger.qty_change), 0) AS INTEGER) AS qty,
+                    sku,
+                    potion_inventory.desired_qty
                 FROM
                     potion_inventory
                 LEFT JOIN potion_ledger ON potion_ledger.potion_id = potion_inventory.id
@@ -202,11 +204,12 @@ def get_potions() -> t.List[PotionEntry]:
                     potion_inventory.blue,
                     potion_inventory.dark,
                     potion_inventory.price,
-                    potion_inventory.sku""")
+                    potion_inventory.sku,
+                    potion_inventory.desired_qty""")
         ).all()
         
         return [PotionEntry.from_db(row.red, row.green, row.blue, row.dark, 
-                                    int(row.qty), row.sku, row.price) 
+                                    row.qty, row.sku, row.price, row.desired_qty) 
                                     for row in result]
 
 def reset():
@@ -224,8 +227,9 @@ def reset():
         )
 
         connection.execute(
-            sqlalchemy.text("INSERT INTO inventory_ledger (gold) VALUES (:gold)"),
-            [{"gold": STARTING_GOLD}]
+            sqlalchemy.text("INSERT INTO inventory_ledger (gold, description) VALUES (:gold, :desc)"),
+            [{"gold": STARTING_GOLD,
+              "desc": "Starting Gold"}]
         )
 
 def add_historical_catalog_data(catalog: t.List[Barrel]):
@@ -243,10 +247,10 @@ def add_historical_catalog_data(catalog: t.List[Barrel]):
                     [{  "created_at": current_time,
                         "sku": barrel.sku,
                         "ml_per_barrel": barrel.ml_per_barrel,
-                        "red": barrel.potion_type.red,
-                        "green": barrel.potion_type.green,
-                        "blue": barrel.potion_type.blue,
-                        "dark": barrel.potion_type.dark,
+                        "red": barrel.potion_type[0],
+                        "green": barrel.potion_type[1],
+                        "blue": barrel.potion_type[2],
+                        "dark": barrel.potion_type[3],
                         "price": barrel.price,
                         "quantity": barrel.quantity}]
             )
@@ -302,30 +306,43 @@ def add_bottling_history(plan: t.List[BottlePlanEntry]):
                     )
             
 class BarrelPlanEntry(t.NamedTuple):
-    barrel_type: t.List[int]
+    sku: str
     quantity: int
+    ml_per_barrel: int
+    price: int
+    barrel_type: t.List[int]
 
-#TODO: NEED TO WORK ON
-def add_barrel_history(plan: t.List[BottlePlanEntry]):
+def add_barrel_history(plan: t.List[BarrelPlanEntry]):
     current_time = datetime.now(tz=timezone.utc)
     with engine.begin() as connection:
         for entry in plan:
             connection.execute(
                 sqlalchemy.text("""
-                    INSERT INTO bottling_history
-                    (created_at, potion_id, quantity)
-                            
-                    SELECT :created_at, potion_inventory.id, :quantity
-                    FROM potion_inventory
-                    WHERE potion_inventory.red = :red
-                        AND potion_inventory.green = :green
-                        AND potion_inventory.blue = :blue
-                        AND potion_inventory.dark = :dark"""),
+                    INSERT INTO barrel_purchase_history
+                    (created_at, sku, quantity, red, green, blue, dark, ml_per_barrel, price)     
+                    VALUES (:created_at, :sku, :quantity, :red, :green, :blue, :dark, :ml_per_barrel, :price)
+                    """),
                             [{
-                            "quantity": entry.quantity,
                             "created_at": current_time,
-                            "red": entry.potion_type[0],
-                            "green": entry.potion_type[1],
-                            "blue": entry.potion_type[2],
-                            "dark": entry.potion_type[3]}]
+                            "sku": entry.sku,
+                            "quantity": entry.quantity,
+                            "red": entry.barrel_type[0],
+                            "green": entry.barrel_type[1],
+                            "blue": entry.barrel_type[2],
+                            "dark": entry.barrel_type[3],
+                            "ml_per_barrel": entry.ml_per_barrel,
+                            "price": entry.price}]
                     )
+            
+def add_cart_checkout(cart_id: int, payment: str):
+    with engine.begin() as connection:
+        connection.execute(
+            sqlalchemy.text("""
+                INSERT INTO cart_checkouts
+                (cart_id, payment)     
+                VALUES (:cart_id, :payment)
+                """),
+                        [{
+                        "cart_id": cart_id,
+                        "payment": payment}]
+                )
