@@ -24,15 +24,18 @@ def create_cart(customer_name: str) -> int:
         ).scalar_one()
         return cart_id
 
-def set_item_in_cart(cart_id: int, potion_id: int, quantity: int):
+def set_item_in_cart(cart_id: int, sku: int, quantity: int):
     """Add the specified number of potions to the cart"""
     with engine.begin() as connection:
         connection.execute(
             sqlalchemy.text("""
                 INSERT INTO cart_contents
                 (cart_id, potion_id, quantity)
-                VALUES (:cart_id, :potion_id, :quantity)"""),
-                [{"cart_id": cart_id, "potion_id": potion_id, "quantity": quantity}]
+                        
+                SELECT :cart_id, potion_inventory.id, :price, :quantity
+                FROM potion_inventory
+                WHERE potion_inventory.sku = :sku"""),
+                [{"cart_id": cart_id, "sku": sku, "quantity": quantity}]
         )
        
 def get_cart_contents(cart_id: int) -> t.List[CartEntry]:
@@ -253,8 +256,6 @@ class PotionCatalogEntry(t.NamedTuple):
     price: int
     quantity: int
 
-
-# TODO: CONTINUE TO WORK ON ME
 def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry]):
     current_time = datetime.now(tz=timezone.utc)
     with engine.begin() as connection:
@@ -262,14 +263,69 @@ def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry]):
             connection.execute(
                 sqlalchemy.text("""
                     INSERT INTO potion_catalog_history
-                    (potion_id, price, quantity)
-                    
-              SELECT potion_inventory.id, 2, 5
-              FROM potion_inventory
-              WHERE potion_inventory.sku = 'RED'"""),
-                    [{  "sku": entry.sku,
-                        "potion_id": entry.potion_id,
-                        "price": entry.price,
-                        "quantity": entry.quantity,
-                        "created_at": current_time}]
-            )
+                    (created_at, potion_id, price, quantity)
+                            
+                    SELECT :created_at, potion_inventory.id, :price, :quantity
+                    FROM potion_inventory
+                    WHERE potion_inventory.sku = :sku"""),
+                            [{  "sku": entry.sku,
+                                "price": entry.price,
+                                "quantity": entry.quantity,
+                                "created_at": current_time}]
+                    )
+class BottlePlanEntry(t.NamedTuple):
+    potion_type: t.List[int]
+    quantity: int
+
+def add_bottling_history(plan: t.List[BottlePlanEntry]):
+    current_time = datetime.now(tz=timezone.utc)
+    with engine.begin() as connection:
+        for entry in plan:
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO bottling_history
+                    (created_at, potion_id, quantity)
+                            
+                    SELECT :created_at, potion_inventory.id, :quantity
+                    FROM potion_inventory
+                    WHERE potion_inventory.red = :red
+                        AND potion_inventory.green = :green
+                        AND potion_inventory.blue = :blue
+                        AND potion_inventory.dark = :dark"""),
+                            [{
+                            "quantity": entry.quantity,
+                            "created_at": current_time,
+                            "red": entry.potion_type[0],
+                            "green": entry.potion_type[1],
+                            "blue": entry.potion_type[2],
+                            "dark": entry.potion_type[3]}]
+                    )
+            
+class BarrelPlanEntry(t.NamedTuple):
+    barrel_type: t.List[int]
+    quantity: int
+
+#TODO: NEED TO WORK ON
+def add_barrel_history(plan: t.List[BottlePlanEntry]):
+    current_time = datetime.now(tz=timezone.utc)
+    with engine.begin() as connection:
+        for entry in plan:
+            connection.execute(
+                sqlalchemy.text("""
+                    INSERT INTO bottling_history
+                    (created_at, potion_id, quantity)
+                            
+                    SELECT :created_at, potion_inventory.id, :quantity
+                    FROM potion_inventory
+                    WHERE potion_inventory.red = :red
+                        AND potion_inventory.green = :green
+                        AND potion_inventory.blue = :blue
+                        AND potion_inventory.dark = :dark"""),
+                            [{
+                            "quantity": entry.quantity,
+                            "created_at": current_time,
+                            "red": entry.potion_type[0],
+                            "green": entry.potion_type[1],
+                            "blue": entry.potion_type[2],
+                            "dark": entry.potion_type[3]}]
+                    )

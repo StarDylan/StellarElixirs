@@ -27,12 +27,13 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     for delivered_potion in potions_delivered:
         db.add_potions_by_type(
             PotionType.from_array(delivered_potion.potion_type), 
-            delivered_potion.quantity)
+            delivered_potion.quantity,
+            "Bottle Delivery")
 
         barrel_delta.remove_stock(delivered_potion.potion_type, 
                                   delivered_potion.quantity)
 
-    db.add_barrel_stock(barrel_delta)
+    db.add_barrel_stock(barrel_delta, "Bottle Delivery")
 
     logger.info("Received Bottles", extra={
         "ml_used_red": -barrel_delta.red_ml,

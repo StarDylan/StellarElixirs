@@ -35,8 +35,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel]):
 
         gold_paid += barrel.price * barrel.quantity
 
-    db.add_gold(-gold_paid)
-    db.add_barrel_stock(barrel_delta)
+    db.add_gold(-gold_paid, "Barrel Delivery")
+    db.add_barrel_stock(barrel_delta, "Barrel Delivery")
 
     logger.info(f"Received Barrels, paid {gold_paid} gold", extra={
         "ml_added_red": barrel_delta.red_ml,
