@@ -43,23 +43,14 @@ class CartItem(BaseModel):
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
-    
-    potion_id = db.get_potion_by_sku(item_sku).id
 
-    if potion_id is None:
-        logger.error("Tried to get potion ID from SKU, but got None", extra={
-            "item_sku": item_sku,
-        })
-        return f"Error: SKU '{item_sku}' not found"
-
-    db.set_item_in_cart(cart_id, potion_id, cart_item.quantity)
+    db.set_item_in_cart(cart_id, item_sku, cart_item.quantity)
 
     logger.info(f"Set {item_sku} to {cart_item.quantity} in #{cart_id}",
         extra={
             "cart_id": cart_id,
             "item_sku": item_sku,
             "quantity": cart_item.quantity,
-            "potion_id": potion_id
         }
     )
 
@@ -80,22 +71,19 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
     # Remove Specified Potions from Inventory
     for cart_entry in cart_contents:
-        potion_entry = db.add_potions_by_id(cart_entry.potion_id, -cart_entry.quantity)
-
-        total_price += potion_entry.price * cart_entry.quantity
+        total_price += cart_entry.price * cart_entry.quantity
         total_potions += cart_entry.quantity
 
-    # Add Gold Gold
-    db.add_gold(total_price)
+    # Add Gold
+    db.add_gold(total_price, f"Checkout for Cart #{cart_id}")
     
-    # Delete Cart and Contents
-    db.delete_cart(cart_id)
-
     logger.info(f"Cart #{cart_id} has been checked out", extra={  # noqa: E501
         "cart_id": cart_id,
         "payment": cart_checkout.payment,
         "total_potions_bought": total_potions,
         "total_gold_paid": total_price
     })
+
+    db.add_cart_checkout(cart_id, cart_checkout.payment)
 
     return {"total_potions_bought": total_potions, "total_gold_paid": total_price}

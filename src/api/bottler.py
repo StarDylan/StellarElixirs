@@ -22,19 +22,23 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
     """ """
     print(potions_delivered)
 
+    bottle_plan_history_record = [db.BottlePlanEntry(bottle.potion_type, bottle.quantity) for bottle in potions_delivered]
+    db.add_bottling_history(bottle_plan_history_record)
+
     barrel_delta = BarrelDelta.init_zero()
     
     for delivered_potion in potions_delivered:
         db.add_potions_by_type(
             PotionType.from_array(delivered_potion.potion_type), 
-            delivered_potion.quantity)
+            delivered_potion.quantity,
+            "Bottle Delivery")
 
         barrel_delta.remove_stock(delivered_potion.potion_type, 
                                   delivered_potion.quantity)
 
-    db.add_barrel_stock(barrel_delta)
+    db.add_barrel_stock(barrel_delta, "Bottle Delivery")
 
-    logger.info("Recieved Bottles", extra={
+    logger.info("Received Bottles", extra={
         "ml_used_red": -barrel_delta.red_ml,
         "ml_used_green": -barrel_delta.green_ml,
         "ml_used_blue": -barrel_delta.blue_ml,
@@ -77,7 +81,7 @@ def get_bottle_plan():
                                 or barrel_stock.dark_ml >= 100):
         least_ratio = None
         least_ratio_potion = None
-        for potion in potions:
+        for potion in potions[:]:
             ratio = potion.quantity / potion.desired_qty
 
             if ratio >= 1.0:
@@ -88,34 +92,12 @@ def get_bottle_plan():
                 least_ratio = ratio
                 least_ratio_potion = potion
         
-        # TAKEN FROM BARREL
-
-        balking_ratio_and_amount = [
-            (15, 1 * potion.desired_qty),
-            (8, 0.3 * potion.desired_qty),
-            (2, 0.2 * potion.desired_qty)
-            ]
+        potions.remove(least_ratio_potion)
         
-        balking_amount = None      
-        if least_ratio_potion:
-            for balk_ratio_temp, balk_amount in balking_ratio_and_amount:
-                if least_ratio_potion.quantity < balk_amount:
-                    balking_amount = balk_amount
-            
+        potions_want_to_make = least_ratio_potion.desired_qty - least_ratio_potion.quantity  # noqa: E501
 
-            potions.remove(least_ratio_potion)
-
-        if balking_amount is None:
-            continue # Don't need to bottle
-
-        # Determine how much we can bottle
-
-        potions_want_to_make = min(balking_amount, least_ratio_potion.desired_qty - least_ratio_potion.quantity)  # noqa: E501
-
-        print(f"balking amount: {balking_amount}")
         print("potions_want_to_make", potions_want_to_make)
         print("least_ratio_potion", least_ratio_potion)
-        print("Balking ratio and amount", balking_ratio_and_amount)
 
         potions_can_make = potions_want_to_make
         for color_required, color_stock in zip(least_ratio_potion.potion_type.to_array(), barrel_stock.to_array()):  # noqa: E501
