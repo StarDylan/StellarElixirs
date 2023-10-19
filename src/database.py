@@ -142,7 +142,23 @@ def add_potions_by_type(potion_type: PotionType, quantity: int, desc: str):
                 "desc": desc
             }]).scalar_one()
     return ledger_id
+
+def add_potions_by_id(potion_id: int, quantity: int, desc: str):
+     with engine.begin() as connection:
         
+        ledger_id = connection.execute(
+            sqlalchemy.text(
+                """INSERT INTO
+                    potion_ledger (qty_change, potion_id, description)
+                    VALUES (:qty_change, :potion_id, :desc)
+                    RETURNING id"""),
+            [{
+                "qty_change": quantity,
+                "potion_id": potion_id,
+                "desc": desc
+            }]).scalar_one()
+        
+        return ledger_id
 
 def add_potions_by_id(potion_id: int, quantity: int, desc: str) -> int:
     """Add the specified amount of potions to the inventory.

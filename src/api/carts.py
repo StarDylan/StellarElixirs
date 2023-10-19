@@ -71,6 +71,11 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
     # Remove Specified Potions from Inventory
     for cart_entry in cart_contents:
+        db.add_potions_by_id(
+            cart_entry.potion_id,
+            -cart_entry.quantity,
+            f"Checkout for Cart #{cart_id}"
+        )
         total_price += cart_entry.price * cart_entry.quantity
         total_potions += cart_entry.quantity
 
