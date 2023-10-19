@@ -123,8 +123,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         # What we can sell them at (50g per 100ml (2))
         # Must be sorted!
         balking_ratio_and_amount = [
-            (15, 1 * barrel_target_amount),
-            (8, 0.3 * barrel_target_amount),
+            (15, 2 * barrel_target_amount),
+            (8, 0.5 * barrel_target_amount),
             (2, 0.2 * barrel_target_amount)
             ]
         
