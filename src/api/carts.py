@@ -78,7 +78,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         total_potions += cart_entry.quantity
 
     # Add Gold
-    db.add_gold(total_price, "Checkout for Cart #{cart_id")
+    db.add_gold(total_price, f"Checkout for Cart #{cart_id}")
     
     logger.info(f"Cart #{cart_id} has been checked out", extra={  # noqa: E501
         "cart_id": cart_id,
