@@ -32,9 +32,9 @@ def set_item_in_cart(cart_id: int, sku: int, quantity: int):
                 INSERT INTO cart_contents
                 (cart_id, potion_id, price, quantity)
                         
-                SELECT :cart_id, potion_inventory.id, potion_inventory.price, :quantity
-                FROM potion_inventory
-                WHERE potion_inventory.sku = :sku"""),
+                SELECT :cart_id, potion_types.id, potion_types.price, :quantity
+                FROM potion_types
+                WHERE potion_types.sku = :sku"""),
                 [{"cart_id": cart_id, "sku": sku, "quantity": quantity}]
         )
        
@@ -125,12 +125,12 @@ def add_potions_by_type(potion_type: PotionType, quantity: int, desc: str):
                 """INSERT INTO
                     potion_ledger (qty_change, potion_id, description)
                     (
-                        SELECT :qty_change, potion_inventory.id, :desc
-                        FROM potion_inventory
-                        WHERE potion_inventory.red=:red AND
-                        potion_inventory.green=:green AND
-                        potion_inventory.blue=:blue AND 
-                        potion_inventory.dark=:dark
+                        SELECT :qty_change, potion_types.id, :desc
+                        FROM potion_types
+                        WHERE potion_types.red=:red AND
+                        potion_types.green=:green AND
+                        potion_types.blue=:blue AND 
+                        potion_types.dark=:dark
                     )
                     RETURNING id"""),
             [{
@@ -170,7 +170,7 @@ def get_potion_type_by_sku(sku: str) -> PotionType | None:
         result = connection.execute(
             sqlalchemy.text("""
                 SELECT red, green, blue, dark
-                FROM potion_inventory
+                FROM potion_types
                 WHERE sku = :sku""",
                 [{"sku": sku}])
         ).first()
@@ -187,25 +187,25 @@ def get_potions() -> t.List[PotionEntry]:
         result = connection.execute(
             sqlalchemy.text("""
                 SELECT
-                    potion_inventory.price,
+                    potion_types.price,
                     red,
                     green,
                     blue,
                     dark,
                     CAST(COALESCE( SUM(potion_ledger.qty_change), 0) AS INTEGER) AS qty,
                     sku,
-                    potion_inventory.desired_qty
+                    potion_types.desired_qty
                 FROM
-                    potion_inventory
-                LEFT JOIN potion_ledger ON potion_ledger.potion_id = potion_inventory.id
+                    potion_types
+                LEFT JOIN potion_ledger ON potion_ledger.potion_id = potion_types.id
                 GROUP BY
-                    potion_inventory.red,
-                    potion_inventory.green,
-                    potion_inventory.blue,
-                    potion_inventory.dark,
-                    potion_inventory.price,
-                    potion_inventory.sku,
-                    potion_inventory.desired_qty""")
+                    potion_types.red,
+                    potion_types.green,
+                    potion_types.blue,
+                    potion_types.dark,
+                    potion_types.price,
+                    potion_types.sku,
+                    potion_types.desired_qty""")
         ).all()
         
         return [PotionEntry.from_db(row.red, row.green, row.blue, row.dark, 
@@ -269,9 +269,9 @@ def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry]):
                     INSERT INTO potion_catalog_history
                     (created_at, potion_id, price, quantity)
                             
-                    SELECT :created_at, potion_inventory.id, :price, :quantity
-                    FROM potion_inventory
-                    WHERE potion_inventory.sku = :sku"""),
+                    SELECT :created_at, potion_types.id, :price, :quantity
+                    FROM potion_types
+                    WHERE potion_types.sku = :sku"""),
                             [{  "sku": entry.sku,
                                 "price": entry.price,
                                 "quantity": entry.quantity,
@@ -290,12 +290,12 @@ def add_bottling_history(plan: t.List[BottlePlanEntry]):
                     INSERT INTO bottling_history
                     (created_at, potion_id, quantity)
                             
-                    SELECT :created_at, potion_inventory.id, :quantity
-                    FROM potion_inventory
-                    WHERE potion_inventory.red = :red
-                        AND potion_inventory.green = :green
-                        AND potion_inventory.blue = :blue
-                        AND potion_inventory.dark = :dark"""),
+                    SELECT :created_at, potion_types.id, :quantity
+                    FROM potion_types
+                    WHERE potion_types.red = :red
+                        AND potion_types.green = :green
+                        AND potion_types.blue = :blue
+                        AND potion_types.dark = :dark"""),
                             [{
                             "quantity": entry.quantity,
                             "created_at": current_time,
