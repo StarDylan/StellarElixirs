@@ -93,8 +93,7 @@ def get_bottle_plan():
                 least_ratio_potion = potion
         
         potions.remove(least_ratio_potion)
-
-     
+        
         potions_want_to_make = least_ratio_potion.desired_qty - least_ratio_potion.quantity  # noqa: E501
 
         print("potions_want_to_make", potions_want_to_make)
