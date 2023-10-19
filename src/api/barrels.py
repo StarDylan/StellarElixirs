@@ -5,7 +5,6 @@ from src import database as db
 from src.models import BarrelDelta
 import logging
 import math
-import datetime
 
 logger = logging.getLogger("barrels")
 
