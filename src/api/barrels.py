@@ -148,7 +148,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         # Determine how much we can spend and how many barrels we can buy
         price_to_spend = min(barrels_required * best_barrel.price, budget)
 
-        barrels_to_buy_qty = min(price_to_spend // best_barrel.price, best_barrel.quantity)  # noqa: E501
+        barrels_to_buy_qty = int(min(price_to_spend // best_barrel.price, best_barrel.quantity))  # noqa: E501
 
         if barrels_to_buy_qty > 0:
             # Update the catalog
