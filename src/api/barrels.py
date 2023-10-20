@@ -63,7 +63,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     barrels_to_buy = []
 
-    starting_budget = gold * 1.0 # USE ALL GOLD
+    starting_budget = int(gold * 1.0) # USE ALL GOLD
 
     budget = starting_budget
     
