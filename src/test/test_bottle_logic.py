@@ -1,6 +1,6 @@
 import src.logic.bottle_logic as bl
-from src.models import Barrel, BarrelStock, PotionEntry, PotionType
-from typing import Iterable, Callable
+from src.models import BarrelStock, PotionEntry, PotionType
+from typing import Callable
 
 
 def type(potion: PotionEntry) -> PotionType:
