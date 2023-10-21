@@ -20,13 +20,6 @@ def type_must_be(barrel_type: list[int]) -> Callable[[Barrel], bool]:
     return filter_by_color
 
 
-####### Rule Theory #######
-
-# TickNum = (Hour - 1) / 2
-#
-####### Small Catalogs are presented after 8th tick of Thurs 
-
-
 def buy_one_barrel(barrel: Barrel, plan: list[Barrel], catalog: list[Barrel]):
     '''Modifies the plan to include one more barrel of the given type.
     And removes one qty from the passed in Barrel Object.

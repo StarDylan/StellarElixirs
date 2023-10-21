@@ -30,24 +30,18 @@ class PotionEntry(t.NamedTuple):
         potion_type = PotionType(red, green, blue, dark)
         return PotionEntry(potion_type, quantity, sku, price, desired_qty)
 
+    def with_quantity(self, quantity: int) -> t.Self:
+        return PotionEntry(self.potion_type, quantity, self.sku, self.price, self.desired_qty)
 
+    def with_desired_qty(self, desired_qty: int) -> t.Self:
+        return PotionEntry(self.potion_type, self.quantity, self.sku, self.price, desired_qty)
+    
 class CartEntry(t.NamedTuple):
     id: int
     potion_id: int
     quantity: int
     price: int
 
-class BarrelStock(t.NamedTuple):
-    red_ml: int
-    green_ml: int
-    blue_ml: int
-    dark_ml: int
-
-    def all_ml(self) -> int:
-        return self.red_ml + self.green_ml + self.blue_ml + self.dark_ml
-    
-    def to_array(self) -> t.List[int]:
-        return [self.red_ml, self.green_ml, self.blue_ml, self.dark_ml]
 
 @dataclass
 class BarrelDelta():
@@ -66,11 +60,11 @@ class BarrelDelta():
         self.dark_ml=self.dark_ml + (other[3] * qty * ml_per_barrel)
 
 
-    def remove_stock(self, other: t.List[int], qty: int):
-        self.red_ml=self.red_ml - (other[0] * qty )
-        self.green_ml=self.green_ml - (other[1] * qty)
-        self.blue_ml=self.blue_ml - (other[2] * qty)
-        self.dark_ml=self.dark_ml - (other[3] * qty)
+    def remove_stock(self, type: PotionType, qty: int):
+        self.red_ml=self.red_ml - (type.red * qty )
+        self.green_ml=self.green_ml - (type.green * qty)
+        self.blue_ml=self.blue_ml - (type.blue * qty)
+        self.dark_ml=self.dark_ml - (type.dark * qty)
     
     def zero_if_negative(self):
         self.red_ml = max(self.red_ml, 0)
@@ -78,8 +72,28 @@ class BarrelDelta():
         self.blue_ml = max(self.blue_ml, 0)
         self.dark_ml = max(self.dark_ml, 0)
     
+    def has_at_least(self, other: t.Self):
+        return self.red_ml >= other.red_ml and self.green_ml >= other.green_ml and self.blue_ml >= other.blue_ml and self.dark_ml >= other.dark_ml
+    
     def to_array(self) -> t.List[int]:
         return [self.red_ml, self.green_ml, self.blue_ml, self.dark_ml]
+    def from_array(barrel_qty: list[int]) -> t.Self:
+        return BarrelDelta(red_ml=barrel_qty[0], green_ml=barrel_qty[1], blue_ml=barrel_qty[2], dark_ml=barrel_qty[3])
+
+class BarrelStock(t.NamedTuple):
+    red_ml: int
+    green_ml: int
+    blue_ml: int
+    dark_ml: int
+
+    def all_ml(self) -> int:
+        return self.red_ml + self.green_ml + self.blue_ml + self.dark_ml
+    
+    def to_array(self) -> t.List[int]:
+        return [self.red_ml, self.green_ml, self.blue_ml, self.dark_ml]
+    def to_delta(self) -> BarrelDelta:
+        return BarrelDelta(red_ml=self.red_ml, green_ml=self.green_ml, blue_ml=self.blue_ml, dark_ml=self.dark_ml)
+
 
 class Barrel(BaseModel):
     sku: str

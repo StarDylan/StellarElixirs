@@ -2,8 +2,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
 from src import database as db
+from src.logic.bottle_logic import bottle_planner
 from src.models import BarrelDelta, PotionType
 import logging
+import json
 
 logger = logging.getLogger("bottler")
 
@@ -54,91 +56,29 @@ def get_bottle_plan():
     Go from barrel to bottle.
     """
 
-    # Each bottle has a quantity of what proportion of red, blue, and
-    # green potion to add.
-    # Expressed in integers from 1 to 100 that must sum up to 100.
-
-
-    barrel_stock = BarrelDelta.init_zero()
-    barrel_stock.add_stock(db.get_barrel_stock().to_array(), 1, 1)
-
-    starting_stock = barrel_stock.to_array()
-
-
+    barrel_stock = db.get_barrel_stock()
     potions = db.get_potions()
 
-    bottle_plan = []
 
-    total_potions = 0
-    for potion in potions:
-        total_potions += potion.quantity
+    plan = bottle_planner(barrel_stock, potions)
 
 
-    # Get the potion with the least ratio of stock 
-    while len(potions) > 0 and (barrel_stock.red_ml >= 100 
-                                or barrel_stock.green_ml >= 100 
-                                or barrel_stock.blue_ml >= 100 
-                                or barrel_stock.dark_ml >= 100):
-        least_ratio = None
-        least_ratio_potion = None
-        for potion in potions[:]:
-            ratio = potion.quantity / potion.desired_qty
-
-            if ratio >= 1.0:
-                potions.remove(potion) 
-                continue
-
-            if least_ratio is None or ratio < least_ratio:
-                least_ratio = ratio
-                least_ratio_potion = potion
-        
-        potions.remove(least_ratio_potion)
-        
-        potions_want_to_make = least_ratio_potion.desired_qty - least_ratio_potion.quantity  # noqa: E501
-
-        print("potions_want_to_make", potions_want_to_make)
-        print("least_ratio_potion", least_ratio_potion)
-
-        potions_can_make = potions_want_to_make
-        for color_required, color_stock in zip(least_ratio_potion.potion_type.to_array(), barrel_stock.to_array()):  # noqa: E501
-            if color_required == 0:
-                continue
-            potions_can_make = min(potions_can_make, color_stock // color_required)
-
-        potion_limit_number = max(300-total_potions, 0)
-
-        potions_can_make = min(potion_limit_number, potions_can_make)
-
-        total_potions += potions_can_make
-        
-        if potions_can_make == 0:
-            continue
-
-        bottle_plan.append(
-                {
-                    "potion_type": least_ratio_potion.potion_type.to_array(),
-                    "quantity": int(potions_can_make),
-                }
+    final_bottle_plan = []
+    for bottle in plan:
+        final_bottle_plan.append(
+            {
+                "potion_type": bottle.potion_type.to_array(),
+                "quantity": bottle.quantity,
+            }
         )
 
-        barrel_stock.remove_stock(least_ratio_potion.potion_type.to_array(), potions_can_make)  # noqa: E501
-            
-
-    if len(bottle_plan) == 0:
-        logger.info("Not bottling", extra={
-            "ml_red": starting_stock[0],
-            "ml_green": starting_stock[1],
-            "ml_blue": starting_stock[2],
-            "ml_dark": starting_stock[3],
-        })
+    if len(final_bottle_plan) == 0:
+        logger.info("Not bottling")
     else:
         logger.info("Planned Bottles", extra={
-            "ml_red": starting_stock[0],
-            "ml_green": starting_stock[1],
-            "ml_blue": starting_stock[2],
-            "ml_dark": starting_stock[3],
-            "bottle_plan": bottle_plan
+            "barrel_stock": json.dumps(barrel_stock, default=vars),
+            "bottle_plan": json.dumps(final_bottle_plan, default=vars),
         })
 
     
-    return bottle_plan
+    return final_bottle_plan
