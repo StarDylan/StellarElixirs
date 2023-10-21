@@ -105,10 +105,6 @@ def get_bottle_plan():
                 continue
             potions_can_make = min(potions_can_make, color_stock // color_required)
 
-
-        
-        
-
         potion_limit_number = max(300-total_potions, 0)
 
         potions_can_make = min(potion_limit_number, potions_can_make)

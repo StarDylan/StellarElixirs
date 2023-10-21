@@ -1,5 +1,6 @@
 import typing as t
 from dataclasses import dataclass
+from pydantic import BaseModel
 
 class PotionType(t.NamedTuple):
     red: int
@@ -79,4 +80,14 @@ class BarrelDelta():
     
     def to_array(self) -> t.List[int]:
         return [self.red_ml, self.green_ml, self.blue_ml, self.dark_ml]
-    
+
+class Barrel(BaseModel):
+    sku: str
+
+    ml_per_barrel: int
+    potion_type: list[int]
+    price: int
+
+    quantity: int
+
+BARREL_TYPES = [[1,0,0,0], [0,1,0,0], [0,0,1,0], [0,0,0,1]]
