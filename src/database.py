@@ -3,7 +3,7 @@ import os
 import sqlalchemy
 from sqlalchemy import create_engine
 import typing as t
-from src.api.barrels import Barrel
+from src.models import Barrel
 from src.constants import STARTING_GOLD
 from src.models import BarrelDelta, BarrelStock, CartEntry, PotionEntry, PotionType
 
@@ -301,15 +301,8 @@ def add_bottling_history(plan: t.List[BottlePlanEntry]):
                             "blue": entry.potion_type[2],
                             "dark": entry.potion_type[3]}]
                     )
-            
-class BarrelPlanEntry(t.NamedTuple):
-    sku: str
-    quantity: int
-    ml_per_barrel: int
-    price: int
-    barrel_type: t.List[int]
 
-def add_barrel_history(plan: t.List[BarrelPlanEntry]):
+def add_barrel_history(plan: t.List[Barrel]):
     current_time = datetime.now(tz=timezone.utc)
     with engine.begin() as connection:
         for entry in plan:
@@ -323,10 +316,10 @@ def add_barrel_history(plan: t.List[BarrelPlanEntry]):
                             "created_at": current_time,
                             "sku": entry.sku,
                             "quantity": entry.quantity,
-                            "red": entry.barrel_type[0],
-                            "green": entry.barrel_type[1],
-                            "blue": entry.barrel_type[2],
-                            "dark": entry.barrel_type[3],
+                            "red": entry.potion_type[0],
+                            "green": entry.potion_type[1],
+                            "blue": entry.potion_type[2],
+                            "dark": entry.potion_type[3],
                             "ml_per_barrel": entry.ml_per_barrel,
                             "price": entry.price}]
                     )
