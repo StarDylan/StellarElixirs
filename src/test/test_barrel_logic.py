@@ -1,6 +1,5 @@
 import src.logic.barrel_logic as bl
 from src.models import Barrel, BarrelStock
-import json
 from typing import Iterable
 
 LARGE_DARK_BARREL = Barrel(**{"sku": "LARGE_DARK_BARREL", "price": 750, "quantity": 10, "potion_type": [0, 0, 0, 1], "ml_per_barrel": 10000})

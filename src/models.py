@@ -1,9 +1,6 @@
 import typing as t
 from dataclasses import dataclass
-
 from pydantic import BaseModel
-from pydantic.dataclasses import dataclass
-import json
 
 class PotionType(t.NamedTuple):
     red: int

@@ -1,11 +1,9 @@
 from fastapi import APIRouter, Depends
-from pydantic import BaseModel
 from src.api import auth
 from src import database as db
 from src.logic.barrel_logic import barrel_planner
 from src.models import Barrel, BarrelDelta
 import logging
-import math
 import json
 
 logger = logging.getLogger("barrels")
