@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from src.models import BARREL_TYPES, Barrel, BarrelDelta, BarrelStock
+from src.models import BARREL_TYPES, Barrel, BarrelDelta, BarrelStock, PotionEntry
 from typing import Callable
 import copy
 import logging
@@ -87,6 +87,28 @@ def buy_one_barrel(barrel: Barrel, plan: list[Barrel], catalog: list[Barrel]):
     if barrel.quantity == 0:
         catalog.remove(barrel)
 
+def get_total_shop_equity(barrel_stock: BarrelDelta, potion_stock: list[PotionEntry], gold: int):
+    # Assume we bought small barrels
+    # And we sell for exactly list potion price
+
+    gold_per_barrel_ml = 100/500
+    blue_gold_per_barrel_ml = 120/500
+
+    equity = gold
+    
+    equity += barrel_stock.red_ml * gold_per_barrel_ml
+    equity += barrel_stock.green_ml * gold_per_barrel_ml
+    equity += barrel_stock.blue_ml* blue_gold_per_barrel_ml
+
+    for potion in potion_stock:
+        sell_price = potion.quantity * potion.price
+        equity += sell_price
+    
+    return equity
+
+def filter_barrels_within_gold(barrels: list[Barrel], gold: int) -> list[Barrel]:
+    return list(filter(lambda a: a.price <= gold, barrels))
+
 @dataclass
 class TimelineEvent:
     '''Includes the start/end of a timeline event, and the day of the week it occurs on.
@@ -140,7 +162,7 @@ def get_budget_ratio(day_of_week: int, tick: int, catalog: list[Barrel]) -> floa
     return 1.0
 
 
-def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelStock, catalog: list[Barrel]) -> list[Barrel]:
+def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelStock, catalog: list[Barrel], potion_stock: list[PotionEntry]) -> list[Barrel]:
     '''Logic for buying barrels, given a budget, current barrel stock, and a catalog of barrels to buy from.
     
     Goals: Most spread of barrels possible to capture the most customers.'''
@@ -150,10 +172,13 @@ def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelS
 
     barrels_to_buy = []
 
+    shop_equity = get_total_shop_equity(barrel_stock, potion_stock, gold)
+
     # Remove all barrels that aren't the best value for color
     # Prevents us from buying MINI barrels
+    # We use shop equity so we can always afford a barrel
     for barrel_type in BARREL_TYPES:
-        best_value_barrel = get_best_value(barrel_type, catalog)
+        best_value_barrel = get_best_value(barrel_type, filter_barrels_within_gold(catalog, shop_equity))
         
         for barrel in filter(type_must_be(barrel_type),catalog[:]):
             if barrel != best_value_barrel:

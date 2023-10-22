@@ -52,13 +52,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     gold = db.get_gold()
 
     barrel_stock = db.get_barrel_stock()
+    potion_stock = db.get_potions()
 
     now = datetime.now(tz=pytz.timezone("America/Los_Angeles"))
     
     day_of_week = now.weekday()
     tick =int(( now.hour - 1 ) / 2)
     
-    plan = barrel_planner(day_of_week, tick, gold, barrel_stock, wholesale_catalog)
+    plan = barrel_planner(day_of_week, tick, gold, barrel_stock, wholesale_catalog, potion_stock)
     # db.add_barrel_history(plan)
 
     # Calculate total price

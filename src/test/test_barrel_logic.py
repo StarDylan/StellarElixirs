@@ -1,5 +1,5 @@
 import src.logic.barrel_logic as bl
-from src.models import Barrel, BarrelStock
+from src.models import Barrel, BarrelDelta, BarrelStock, PotionEntry, PotionType
 from typing import Iterable
 
 LARGE_DARK_BARREL = Barrel(**{"sku": "LARGE_DARK_BARREL", "price": 750, "quantity": 10, "potion_type": [0, 0, 0, 1], "ml_per_barrel": 10000})
@@ -66,17 +66,26 @@ def calculate_gold_spent(plan: list[Barrel]) -> int:
 def test_barrel_logic_buys_a_barrel_when_starting_out():
     plan = bl.barrel_planner(3, 0, 100, 
                       BarrelStock(0,0,0,0), 
-                      small_catalog)
+                      small_catalog, [])
     
     check_for_valid_plan(plan, small_catalog)
 
     assert len(plan) > 0
     
+def test_barrel_logic_buys_a_barrel_when_starting_out_with_medium_catalog():
+    plan = bl.barrel_planner(3, 0, 100, 
+                      BarrelStock(0,0,0,0), 
+                      medium_catalog, [])
+    
+    check_for_valid_plan(plan, medium_catalog)
+
+    assert len(plan) > 0
+
 
 def test_barrel_logic_buys_a_mix_when_available():
     plan = bl.barrel_planner(3, 0, 320, 
                       BarrelStock(0,0,0,0), 
-                      small_catalog)
+                      small_catalog, [])
     
     check_for_valid_plan(plan, small_catalog)
 
@@ -87,25 +96,44 @@ def test_barrel_logic_buys_a_mix_when_available():
 def test_barrel_logic_doesnt_buy_if_not_enough_gold():
     plan = bl.barrel_planner(5, 0, 50, 
                       BarrelStock(0,0,0,0), 
-                      small_catalog)
+                      small_catalog, [])
     
     check_for_valid_plan(plan, small_catalog)
 
     assert len(plan) == 0, "Shouldn't buy anything if not enough gold"
 
-def test_never_buy_mini_barrel():
+def test_buy_mini_barrel_if_broke():
     plan = bl.barrel_planner(3, 0, 70, 
                             BarrelStock(0,0,0,0), 
-                            small_catalog)
+                            small_catalog, [])
 
     check_for_valid_plan(plan, small_catalog)
 
-    assert len(plan) == 0, "Shouldn't buy mini barrel ever"
+    assert len(plan) == 1
+
+def test_dont_buy_mini_barrel_if_rich():
+    plan = bl.barrel_planner(3, 0, 70, 
+                            BarrelStock(1000,0,0,0), 
+                            small_catalog, [])
+
+    check_for_valid_plan(plan, small_catalog)
+
+    assert len(plan) == 0, "Shouldn't buy mini barrel when rich, but no gold"
+
+def test_dont_buy_mini_barrel_if_rich_in_potions():
+    plan = bl.barrel_planner(3, 0, 70, 
+                            BarrelStock(0,0,0,0), 
+                            small_catalog, 
+                            [PotionEntry(PotionType(100,0,0,0), 50, "RED", 50, 60)])
+
+    check_for_valid_plan(plan, small_catalog)
+
+    assert len(plan) == 0, "Shouldn't buy mini barrel when rich, but no gold"
 
 def test_special_20_percent_budget():
     plan = bl.barrel_planner(5, 9, 1250, 
                              BarrelStock(0,1000,1000,1000),
-                             medium_catalog)
+                             medium_catalog, [])
     
     check_for_valid_plan(plan, medium_catalog)
 
@@ -116,7 +144,7 @@ def test_special_20_percent_budget():
 def test_special_50_percent_budget():
     plan = bl.barrel_planner(5, 0, 400, 
                              BarrelStock(0,600,600,600),
-                             small_catalog)
+                             small_catalog, [])
     
     check_for_valid_plan(plan, small_catalog)
 
@@ -126,7 +154,7 @@ def test_special_50_percent_budget():
 def test_use_all_gold_when_large_barrels():
     plan = bl.barrel_planner(0, 0, 500, 
                              BarrelStock(0,300,300,300),
-                             large_catalog)
+                             large_catalog, [])
     
     check_for_valid_plan(plan, large_catalog)
 
@@ -136,7 +164,7 @@ def test_use_all_gold_when_large_barrels():
 def test_use_all_gold_when_medium_barrels_past_large():
     plan = bl.barrel_planner(0, 11, 250, 
                              BarrelStock(0,300,300,300),
-                             medium_catalog)
+                             medium_catalog, [])
     
     check_for_valid_plan(plan, medium_catalog)
 
@@ -149,7 +177,7 @@ def test_use_all_gold_when_medium_barrels_past_large():
 def test_total_balance():
     plan = bl.barrel_planner(3, 0, 300, 
                              BarrelStock(500,0,0,0),
-                             small_catalog)
+                             small_catalog, [])
     
     check_for_valid_plan(plan, small_catalog)
 
@@ -184,3 +212,13 @@ def test_timeline_event():
 
     assert bl.TimelineEvent(5, 3).currently_before_ticks(4, 9, 6)
     assert not bl.TimelineEvent(5, 3).currently_before_ticks(4, 9, 5)
+
+def test_total_shop_equity():
+    equity = bl.get_total_shop_equity(BarrelDelta(100, 400, 600, 0), [
+        PotionEntry(PotionType(100, 0, 0, 0), 5, "RED", 50, 60),
+        PotionEntry(PotionType(0, 0, 100, 0), 8, "BLUE", 65, 60)
+    ],
+    1000)
+
+    assert equity == 1000 + (100 / (5)) + (400 / 5) + (600 / (500/120)) + (50 * 5) + (8 * 65)
+
