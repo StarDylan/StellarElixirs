@@ -3,7 +3,9 @@ from src.api import auth
 from src import database as db
 from src.logic.barrel_logic import barrel_planner
 from src.models import Barrel, BarrelDelta
+from datetime import datetime
 import logging
+import pytz
 import json
 
 logger = logging.getLogger("barrels")
@@ -50,8 +52,13 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     gold = db.get_gold()
 
     barrel_stock = db.get_barrel_stock()
+
+    now = datetime.now(tz=pytz.timezone("America/Los_Angeles"))
     
-    plan = barrel_planner(gold, barrel_stock, wholesale_catalog)
+    day_of_week = now.weekday()
+    tick =int(( now.hour - 1 ) / 2)
+    
+    plan = barrel_planner(day_of_week, tick, gold, barrel_stock, wholesale_catalog)
     # db.add_barrel_history(plan)
 
     # Calculate total price
