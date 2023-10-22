@@ -35,7 +35,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory]):
             delivered_potion.quantity,
             "Bottle Delivery")
 
-        barrel_delta.remove_stock(delivered_potion.potion_type, 
+        barrel_delta.remove_stock(PotionType.from_array(delivered_potion.potion_type), 
                                   delivered_potion.quantity)
 
     db.add_barrel_stock(barrel_delta, "Bottle Delivery")
