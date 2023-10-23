@@ -23,6 +23,7 @@ create table
     sku text not null,
     price integer not null,
     desired_qty bigint not null,
+    is_active boolean not null default true,
     constraint potion_inventory_pkey primary key (id),
     constraint potion_inventory_sku_key unique (sku),
     constraint potiontypesumsto100 check (((((red + green) + blue) + dark) = 100))

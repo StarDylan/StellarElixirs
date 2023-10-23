@@ -195,6 +195,7 @@ def get_potions() -> t.List[PotionEntry]:
                 FROM
                     potion_types
                 LEFT JOIN potion_ledger ON potion_ledger.potion_id = potion_types.id
+                WHERE is_active = true
                 GROUP BY
                     potion_types.red,
                     potion_types.green,
