@@ -7,6 +7,7 @@ import json
 import logging
 import dotenv
 import os
+from starlette.middleware.cors import CORSMiddleware
 
 description = """
 Shine Bright with Stellar Elixirs: Your Celestial Source for Magical Potions
@@ -31,6 +32,16 @@ app = FastAPI(
 logging.getLogger().setLevel(logging.INFO)
 
 (log_request_info) = init_logger(app)
+
+origins = ["https://potion-exchange.vercel.app"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["GET", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 app.include_router(audit.router)
 app.include_router(carts.router)
