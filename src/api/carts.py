@@ -71,10 +71,22 @@ def search_orders(
     if offset > 0:
         previous = str(offset - limit)
 
+    items = []
+    for item in results:
+        items.append(
+            {
+                "line_item_id": item.line_item_id,
+                "item_sku": item.item_sku,
+                "customer_name": item.customer_name,
+                "line_item_total": item.line_item_total,
+                "timestamp": item.timestamp,
+            }
+        )
+
     return {
         "previous": previous,
         "next": next,
-        "results": results,
+        "results": items,
     }
 
 

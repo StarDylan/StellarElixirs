@@ -379,4 +379,4 @@ def get_cart_line_items(offset: int, limit: int, sort_col: str, sort_order: str,
         if len(result) == 0:
             return ([], 0)
 
-        return ([CartLineItem(row.line_item_id, row.item_sku, row.customer_name, row.line_item_total, str(row.timestamp)) for row in result], result[0].full_count)
+        return ([CartLineItem(row.line_item_id, row.item_sku, row.customer_name, row.line_item_total, row.timestamp) for row in result], result[0].full_count)
