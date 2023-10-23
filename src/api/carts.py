@@ -4,7 +4,6 @@ from pydantic import BaseModel
 from src.api import auth
 from src import database as db
 import logging
-import sys
 
 logger = logging.getLogger("carts")
 
