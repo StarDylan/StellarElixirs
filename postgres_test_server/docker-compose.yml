@@ -1,0 +1,20 @@
+version: '3'
+services:
+  testdb_postgres:
+    image: postgres
+    restart: always
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: example
+      POSTGRES_USER: "test"
+      POSTGRES_DB: "test"
+      POSTGRES_HOST_AUTH_METHOD: "trust"
+    
+    container_name: testdb_postgres
+    command: ["postgres", "-c", "log_statement=all"]
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
