@@ -47,7 +47,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
 
     
-    # db.add_historical_catalog_data(wholesale_catalog)
+    db.add_historical_catalog_data(wholesale_catalog)
     
     gold = db.get_gold()
 
@@ -60,7 +60,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     tick =int(( now.hour - 1 ) / 2)
     
     plan = barrel_planner(day_of_week, tick, gold, barrel_stock, wholesale_catalog, potion_stock)
-    # db.add_barrel_history(plan)
+    db.add_barrel_history(plan)
 
     # Calculate total price
     total_price = sum([barrel.price * barrel.quantity for barrel in plan])
