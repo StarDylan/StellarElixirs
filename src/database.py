@@ -195,6 +195,7 @@ def get_potions() -> t.List[PotionEntry]:
                 FROM
                     potion_types
                 LEFT JOIN potion_ledger ON potion_ledger.potion_id = potion_types.id
+                WHERE is_active = true
                 GROUP BY
                     potion_types.red,
                     potion_types.green,
@@ -336,3 +337,47 @@ def add_cart_checkout(cart_id: int, payment: str):
                         "cart_id": cart_id,
                         "payment": payment}]
                 )
+
+class CartLineItem(t.NamedTuple):
+    line_item_id: int
+    item_sku: str
+    customer_name: str
+    line_item_total: int
+    timestamp: str
+
+def get_cart_line_items(offset: int, limit: int, sort_col: str, sort_order: str, name: str, sku: str) -> t.Tuple[t.List[CartLineItem], int]:
+    order_by_append = f"{str(sort_col)} {str(sort_order)}"
+
+    name_where = ""
+    if name != "":
+        name_where = f"AND carts.customer_name ILIKE '%{name}%'"
+
+    sku_where = ""
+    if sku != "":
+        sku_where = f"AND potion_types.sku ILIKE '%{sku}%'"
+
+    with engine.begin() as conn:
+        result = conn.execute(
+            sqlalchemy.text(f"""
+                SELECT cart_contents.created_at AS timestamp, cart_contents.id AS line_item_id,
+                             quantity * cart_contents.price AS line_item_total, carts.customer_name, 
+                            potion_types.sku AS item_sku,
+                            COUNT(*) OVER() AS full_count
+                FROM cart_contents
+                JOIN carts ON carts.id = cart_contents.cart_id
+                JOIN potion_types ON potion_types.id = cart_contents.potion_id
+                WHERE true {name_where} {sku_where}
+                ORDER BY {order_by_append}
+                LIMIT :limit
+                OFFSET :offset
+                """),
+                [{
+                    "limit": limit,
+                    "offset": offset
+                }]
+        ).all()
+
+        if len(result) == 0:
+            return ([], 0)
+
+        return ([CartLineItem(row.line_item_id, row.item_sku, row.customer_name, row.line_item_total, row.timestamp) for row in result], result[0].full_count)
