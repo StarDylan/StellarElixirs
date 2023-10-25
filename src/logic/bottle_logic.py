@@ -52,6 +52,10 @@ def bottle_planner(barrel_stock: BarrelStock, potential_and_current_potions: lis
         # Can we make any of our potions?
         if len(potions_we_can_make) == 0:
             break
+
+        # Of the potions we can make, are we at capacity for all?
+        if all(map(lambda a: a.quantity >= a.desired_qty ,potions_we_can_make)):
+            break # We are at capacity for all potions we can make
             
         # Lets find the potion that we are the furthest from our
         # desired qty

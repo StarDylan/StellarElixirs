@@ -68,3 +68,16 @@ def test_not_bottling_if_no_stock():
     plan = bl.bottle_planner(barrel_stock, potential_potions_and_stock)
     
     assert len(plan) == 0
+
+def test_dont_go_over_desired_qty():
+    barrel_stock = BarrelStock(1000,0,0,0)
+
+    potential_potions_and_stock = [
+        RED.with_quantity(55).with_desired_qty(50), 
+        PURPLE.with_quantity(0).with_desired_qty(50), 
+        BLUE.with_quantity(0).with_desired_qty(50)
+    ]
+
+    plan = bl.bottle_planner(barrel_stock, potential_potions_and_stock)
+    
+    assert len(plan) == 0
