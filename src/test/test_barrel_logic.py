@@ -172,6 +172,16 @@ def test_use_all_gold_when_medium_barrels_past_large():
     assert MEDIUM_RED_BARREL.sku in skus(plan)
 
 
+def test_only_buy_up_to_30000_ml():
+    plan = bl.barrel_planner(0, 11, 5000, 
+                             BarrelStock(29000,40000,40000,40000),
+                             medium_catalog, [])
+    
+    check_for_valid_plan(plan, medium_catalog)
+
+    assert plan[0].quantity == 1
+    assert MEDIUM_RED_BARREL.sku in skus(plan)
+    assert len(plan) == 1
 
 
 def test_total_balance():

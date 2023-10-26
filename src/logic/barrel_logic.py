@@ -170,6 +170,8 @@ def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelS
     barrel_stock: BarrelDelta = barrel_stock.to_delta()
     budget = int(gold * get_budget_ratio(day_of_week, tick, catalog))
 
+    target_ml = 30000
+
     barrels_to_buy = []
 
     shop_equity = get_total_shop_equity(barrel_stock, potion_stock, gold)
@@ -193,8 +195,19 @@ def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelS
         if min(catalog, key=price).price > budget:
             break
 
+        # If we have enough of every barrel, break
+        if min(barrel_stock.to_array()) >= target_ml:
+            break
+
         # Determine barrel type that we have the least of
         least_barrel_type = determine_barrel_we_have_least_of(barrel_stock, catalog)
+
+        # Remove from catalog if we are at capacity for this type
+        if barrel_stock.to_array()[least_barrel_type.index(1)] >= target_ml:
+            # If we have enough of this type, skip it
+            for barrel in filter(type_must_be(barrel_type),catalog[:]):
+                    catalog.remove(barrel)
+            continue
 
         # Find best value barrel for potion type
         best_value_barrel = get_best_value(least_barrel_type, catalog)
