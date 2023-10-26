@@ -12,7 +12,7 @@ def database_connection_url():
 
 engine = create_engine(database_connection_url(), pool_pre_ping=True)
 
-def create_cart(customer_name: str, conn: Connection) -> int:
+def create_cart(conn: Connection, customer_name: str) -> int:
     """Create a new cart and return its id"""
     cart_id = conn.execute(
         sqlalchemy.text("""
@@ -23,7 +23,7 @@ def create_cart(customer_name: str, conn: Connection) -> int:
     ).scalar_one()
     return cart_id
 
-def set_item_in_cart(cart_id: int, sku: int, quantity: int, conn: Connection):
+def set_item_in_cart(conn: Connection, cart_id: int, sku: int, quantity: int):
     """Add the specified number of potions to the cart"""
     conn.execute(
         sqlalchemy.text("""
@@ -36,7 +36,7 @@ def set_item_in_cart(cart_id: int, sku: int, quantity: int, conn: Connection):
             [{"cart_id": cart_id, "sku": sku, "quantity": quantity}]
     )
        
-def get_cart_contents(cart_id: int, conn: Connection) -> t.List[CartEntry]:
+def get_cart_contents(conn: Connection, cart_id: int) -> t.List[CartEntry]:
     """Return a list of all potions in the cart"""
     result = conn.execute(
         sqlalchemy.text("""
@@ -64,7 +64,7 @@ def get_gold(conn: Connection):
 
     return int(gold)
     
-def add_gold(gold_to_add: int, desc: str, conn: Connection) -> int:
+def add_gold(conn: Connection, gold_to_add: int, desc: str) -> int:
     """Add the specified amount of gold to the global inventory"""
     id = conn.execute(
         sqlalchemy.text("""INSERT INTO inventory_ledger
@@ -76,7 +76,7 @@ def add_gold(gold_to_add: int, desc: str, conn: Connection) -> int:
 
     return id
 
-def add_barrel_stock(barrel_delta: BarrelDelta, desc: str, conn: Connection) -> int:
+def add_barrel_stock(conn: Connection, barrel_delta: BarrelDelta, desc: str) -> int:
     """Add the specified amount of each color to the global inventory
     
     Returns ledger line id"""
@@ -108,7 +108,7 @@ def get_barrel_stock(conn: Connection) -> BarrelStock:
                         int(result.blue), int(result.dark))
 
     
-def add_potions_by_type(potion_type: PotionType, quantity: int, desc: str, conn: Connection):
+def add_potions_by_type(conn: Connection, potion_type: PotionType, quantity: int, desc: str):
     """Add the specified amount of potions of specific type to the inventory"""
         
     ledger_id = conn.execute(
@@ -134,7 +134,7 @@ def add_potions_by_type(potion_type: PotionType, quantity: int, desc: str, conn:
         }]).scalar_one()
     return ledger_id
 
-def add_potions_by_id(potion_id: int, quantity: int, desc: str, conn: Connection):        
+def add_potions_by_id(conn: Connection, potion_id: int, quantity: int, desc: str):        
     ledger_id = conn.execute(
         sqlalchemy.text(
             """INSERT INTO
@@ -150,7 +150,7 @@ def add_potions_by_id(potion_id: int, quantity: int, desc: str, conn: Connection
     return ledger_id
 
 
-def get_potion_type_by_sku(sku: str, conn: Connection) -> PotionType | None:
+def get_potion_type_by_sku(conn: Connection, sku: str) -> PotionType | None:
     """Return the potion id with the specified sku"""
     result = conn.execute(
         sqlalchemy.text("""
@@ -216,7 +216,7 @@ def reset(conn: Connection):
             "desc": "Starting Gold"}]
     )
 
-def add_historical_catalog_data(catalog: t.List[Barrel], conn: Connection):
+def add_historical_catalog_data(conn: Connection, catalog: t.List[Barrel]):
     """Add the catalog data to the database"""
     current_time = datetime.now(tz=timezone.utc)
     for barrel in catalog:
@@ -243,7 +243,7 @@ class PotionCatalogEntry(t.NamedTuple):
     price: int
     quantity: int
 
-def add_historical_potion_catalog_data(catalog: t.List[PotionCatalogEntry], conn: Connection):
+def add_historical_potion_catalog_data(conn: Connection, catalog: t.List[PotionCatalogEntry]):
     current_time = datetime.now(tz=timezone.utc)
     for entry in catalog:
         conn.execute(
@@ -263,7 +263,7 @@ class BottlePlanEntry(t.NamedTuple):
     potion_type: t.List[int]
     quantity: int
 
-def add_bottling_history(plan: t.List[BottlePlanEntry], conn: Connection):
+def add_bottling_history(conn: Connection, plan: t.List[BottlePlanEntry]):
     current_time = datetime.now(tz=timezone.utc)
     for entry in plan:
         conn.execute(
@@ -286,7 +286,7 @@ def add_bottling_history(plan: t.List[BottlePlanEntry], conn: Connection):
                         "dark": entry.potion_type[3]}]
                 )
 
-def add_barrel_history(plan: t.List[Barrel], conn: Connection):
+def add_barrel_history(conn: Connection, plan: t.List[Barrel]):
     current_time = datetime.now(tz=timezone.utc)
     for entry in plan:
         conn.execute(
@@ -307,7 +307,7 @@ def add_barrel_history(plan: t.List[Barrel], conn: Connection):
                         "price": entry.price}]
                 )
             
-def add_cart_checkout(cart_id: int, payment: str, conn: Connection):
+def add_cart_checkout(conn: Connection, cart_id: int, payment: str):
     conn.execute(
         sqlalchemy.text("""
             INSERT INTO cart_checkouts
@@ -326,7 +326,7 @@ class CartLineItem(t.NamedTuple):
     line_item_total: int
     timestamp: str
 
-def get_cart_line_items(offset: int, limit: int, sort_col: str, sort_order: str, name: str, sku: str, conn: Connection) -> t.Tuple[t.List[CartLineItem], int]:
+def get_cart_line_items(conn: Connection, offset: int, limit: int, sort_col: str, sort_order: str, name: str, sku: str) -> t.Tuple[t.List[CartLineItem], int]:
     order_by_append = f"{str(sort_col)} {str(sort_order)}"
 
     name_where = ""
