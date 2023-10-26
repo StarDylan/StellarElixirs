@@ -61,33 +61,34 @@ def search_orders(
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
     """
+    with db.engine.begin() as conn:
+        results, total = db.get_cart_line_items(conn,
+            offset, limit, sort_col.value, sort_order.value, customer_name, potion_sku)
+        next = ""
+        if total - offset > limit:
+            next = str(offset + limit)
 
-    results, total = db.get_cart_line_items(offset, limit, sort_col.value, sort_order.value, customer_name, potion_sku)
-    next = ""
-    if total - offset > limit:
-        next = str(offset + limit)
+        previous = ""
+        if offset > 0:
+            previous = str(offset - limit)
 
-    previous = ""
-    if offset > 0:
-        previous = str(offset - limit)
+        items = []
+        for item in results:
+            items.append(
+                {
+                    "line_item_id": item.line_item_id,
+                    "item_sku": item.item_sku,
+                    "customer_name": item.customer_name,
+                    "line_item_total": item.line_item_total,
+                    "timestamp": item.timestamp,
+                }
+            )
 
-    items = []
-    for item in results:
-        items.append(
-            {
-                "line_item_id": item.line_item_id,
-                "item_sku": item.item_sku,
-                "customer_name": item.customer_name,
-                "line_item_total": item.line_item_total,
-                "timestamp": item.timestamp,
-            }
-        )
-
-    return {
-        "previous": previous,
-        "next": next,
-        "results": items,
-    }
+        return {
+            "previous": previous,
+            "next": next,
+            "results": items,
+        }
 
 
 
@@ -98,13 +99,15 @@ class NewCart(BaseModel):
 @router.post("/")
 def create_cart(new_cart: NewCart):
     """ """
-    new_cart_id = db.create_cart(new_cart.customer)
-        
-    logger.info(f"Creating cart {new_cart_id}", extra={
-        "cart_id": new_cart_id
-    })
 
-    return {"cart_id": new_cart_id}
+    with db.engine.begin() as conn:
+        new_cart_id = db.create_cart(conn, new_cart.customer)
+            
+        logger.info(f"Creating cart {new_cart_id}", extra={
+            "cart_id": new_cart_id
+        })
+
+        return {"cart_id": new_cart_id}
 
 
 @router.get("/{cart_id}")
@@ -122,7 +125,8 @@ class CartItem(BaseModel):
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
 
-    db.set_item_in_cart(cart_id, item_sku, cart_item.quantity)
+    with db.engine.begin() as conn:
+        db.set_item_in_cart(conn, cart_id, item_sku, cart_item.quantity)
 
     logger.info(f"Set {item_sku} to {cart_item.quantity} in #{cart_id}",
         extra={
@@ -142,31 +146,33 @@ class CartCheckout(BaseModel):
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """ """
 
-    cart_contents = db.get_cart_contents(cart_id)
+    with db.engine.begin() as conn:
 
-    total_price = 0
-    total_potions = 0
+        cart_contents = db.get_cart_contents(conn, cart_id)
 
-    # Remove Specified Potions from Inventory
-    for cart_entry in cart_contents:
-        db.add_potions_by_id(
-            cart_entry.potion_id,
-            -cart_entry.quantity,
-            f"Checkout for Cart #{cart_id}"
-        )
-        total_price += cart_entry.price * cart_entry.quantity
-        total_potions += cart_entry.quantity
+        total_price = 0
+        total_potions = 0
 
-    # Add Gold
-    db.add_gold(total_price, f"Checkout for Cart #{cart_id}")
-    
-    logger.info(f"Cart #{cart_id} has been checked out", extra={  # noqa: E501
-        "cart_id": cart_id,
-        "payment": cart_checkout.payment,
-        "total_potions_bought": total_potions,
-        "total_gold_paid": total_price
-    })
+        # Remove Specified Potions from Inventory
+        for cart_entry in cart_contents:
+            db.add_potions_by_id(conn,
+                cart_entry.potion_id,
+                -cart_entry.quantity,
+                f"Checkout for Cart #{cart_id}"
+            )
+            total_price += cart_entry.price * cart_entry.quantity
+            total_potions += cart_entry.quantity
 
-    db.add_cart_checkout(cart_id, cart_checkout.payment)
+        # Add Gold
+        db.add_gold(conn, total_price, f"Checkout for Cart #{cart_id}")
+        
+        logger.info(f"Cart #{cart_id} has been checked out", extra={  # noqa: E501
+            "cart_id": cart_id,
+            "payment": cart_checkout.payment,
+            "total_potions_bought": total_potions,
+            "total_gold_paid": total_price
+        })
+
+        db.add_cart_checkout(conn, cart_id, cart_checkout.payment)
 
     return {"total_potions_bought": total_potions, "total_gold_paid": total_price}

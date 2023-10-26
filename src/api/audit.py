@@ -16,12 +16,14 @@ router = APIRouter(
 def get_inventory():
     """ """
 
-    total_potions = 0
-    for potion in db.get_potions():
-        total_potions += potion.quantity
+    with db.engine.begin() as conn:
+        
+        total_potions = 0
+        for potion in db.get_potions(conn):
+            total_potions += potion.quantity
 
-    ml_in_barrels = db.get_barrel_stock().all_ml()
-    gold = db.get_gold()
+        ml_in_barrels = db.get_barrel_stock(conn).all_ml()
+        gold = db.get_gold(conn)
 
     logger.info("Being Audited", extra={
         "number_of_potions": total_potions, 

@@ -19,8 +19,8 @@ def reset():
     """
 
     logger.info("Resetting Shop State")
-
-    db.reset()
+    with db.engine.begin() as conn:
+        db.reset(conn)
 
 
 @router.get("/shop_info/")
