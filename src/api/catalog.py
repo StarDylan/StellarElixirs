@@ -33,7 +33,7 @@ def get_catalog():
                 "potion_type": potion_entry.potion_type.to_array(),
             })
 
-            historical_record.append(conn,
+            historical_record.append(
                 db.PotionCatalogEntry(
                     potion_entry.sku,
                     potion_entry.price,
