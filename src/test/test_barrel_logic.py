@@ -206,6 +206,45 @@ def test_hang():
 
     assert len(plan) == 0
 
+def test_buy_90k_for_large():
+    plan = bl.barrel_planner(6, 9, 100000, 
+        BarrelStock(80000,150000,150000,150000),
+        large_catalog, 
+        [])
+
+    assert len(plan) == 1
+    assert LARGE_RED_BARREL.sku in skus(plan)
+    assert plan[0].quantity == 1
+
+def test_buy_60k_for_medium():
+    plan = bl.barrel_planner(6, 9, 100000, 
+        BarrelStock(80000,150000,150000,150000),
+        large_catalog, 
+        [])
+
+    assert len(plan) == 1
+    assert LARGE_RED_BARREL.sku in skus(plan)
+    assert plan[0].quantity == 1
+
+def test_buy_10k_for_small():
+    plan = bl.barrel_planner(1, 0, 1000000, 
+        BarrelStock(5_000,150000,150000,150000),
+        small_catalog, 
+        [])
+
+    assert len(plan) == 1
+    assert SMALL_RED_BARREL.sku in skus(plan)
+    assert plan[0].quantity == 10
+
+def test_buy_30k_for_medium():
+    plan = bl.barrel_planner(1, 0, 1000000, 
+        BarrelStock(25_000,150000,150000,150000),
+        medium_catalog, 
+        [])
+
+    assert len(plan) == 1
+    assert MEDIUM_RED_BARREL.sku in skus(plan)
+    assert plan[0].quantity == 2
 
 ######################
 ####### HELPER########

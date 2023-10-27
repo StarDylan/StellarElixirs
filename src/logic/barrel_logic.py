@@ -161,6 +161,20 @@ def get_budget_ratio(day_of_week: int, tick: int, catalog: list[Barrel]) -> floa
     # Otherwise just use 100% of our gold
     return 1.0
 
+def get_barrel_ml_target(catalog: list[Barrel]) -> int:
+    
+    classification = classify_catalog(catalog)
+
+    # ALWAYS buy all LARGE barrels
+    if classification == CatalogType.LARGE:
+        return 90_000
+
+    elif classification == CatalogType.MEDIUM:
+        return 30_000
+
+    else: # Small
+        return 10_000
+
 
 def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelStock, catalog: list[Barrel], potion_stock: list[PotionEntry]) -> list[Barrel]:
     '''Logic for buying barrels, given a budget, current barrel stock, and a catalog of barrels to buy from.
@@ -170,7 +184,7 @@ def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelS
     barrel_stock: BarrelDelta = barrel_stock.to_delta()
     budget = int(gold * get_budget_ratio(day_of_week, tick, catalog))
 
-    target_ml = 30000
+    target_ml = get_barrel_ml_target(catalog)
 
     barrels_to_buy = []
 
