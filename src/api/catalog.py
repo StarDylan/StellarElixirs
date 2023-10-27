@@ -15,8 +15,8 @@ def get_catalog():
     """
 
     with db.engine.begin() as conn:
-        # Can return a max of 20 items.
-        potions_to_sell = db.get_potions(conn)[:20]
+        # Can return a max of 6 items.
+        potions_to_sell = db.get_potions(conn)[:6]
         
         catalog = []
         historical_record = []
@@ -47,7 +47,7 @@ def get_catalog():
             return []
 
 
-        db.add_historical_potion_catalog_data(conn, historical_record)
+        # db.add_historical_potion_catalog_data(conn, historical_record)
         
         
         logger.info("Catalog with potions served", extra={
