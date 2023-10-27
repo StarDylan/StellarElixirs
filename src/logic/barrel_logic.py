@@ -205,7 +205,7 @@ def barrel_planner(day_of_week: int, tick: int, gold: int, barrel_stock: BarrelS
         # Remove from catalog if we are at capacity for this type
         if barrel_stock.to_array()[least_barrel_type.index(1)] >= target_ml:
             # If we have enough of this type, skip it
-            for barrel in filter(type_must_be(barrel_type),catalog[:]):
+            for barrel in filter(type_must_be(least_barrel_type),catalog[:]):
                     catalog.remove(barrel)
             continue
 

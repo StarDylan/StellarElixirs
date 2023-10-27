@@ -198,6 +198,14 @@ def test_total_balance():
 
 
 
+def test_hang():
+    plan = bl.barrel_planner(5, 4, 70000, 
+        BarrelStock(122756,157206,134538,0),
+        small_catalog, 
+        [PotionEntry(PotionType(0, 0, 100, 0), 31, "BLUE", 60, 60)])
+
+    assert len(plan) == 0
+
 
 ######################
 ####### HELPER########
@@ -231,4 +239,3 @@ def test_total_shop_equity():
     1000)
 
     assert equity == 1000 + (100 / (5)) + (400 / 5) + (600 / (500/120)) + (50 * 5) + (8 * 65)
-

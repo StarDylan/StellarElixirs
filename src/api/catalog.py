@@ -47,7 +47,7 @@ def get_catalog():
             return []
 
 
-        # db.add_historical_potion_catalog_data(conn, historical_record)
+        db.add_historical_potion_catalog_data(conn, historical_record)
         
         
         logger.info("Catalog with potions served", extra={
